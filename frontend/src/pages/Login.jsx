@@ -16,9 +16,9 @@ const Login = () => {
 
   const features = [
     { icon: Landmark, label: "Hierarchical location structure" },
-    { icon: Thermometer, label: "Real-time climate monitoring" },
+    { icon: Thermometer, label: "Real-time Inventory Tracking" },
     { icon: ShieldCheck, label: "Full chemical audit trail" },
-    { icon: ScanLine, label: "QR scanning & quick actions" },
+    { icon: ScanLine, label: "Usage analytics and Report Generation" },
   ];
   return (
     <div className="min-h-screen w-full flex bg-(--color-bg) font-(family-name:--font-body)">
@@ -90,7 +90,7 @@ const Login = () => {
               </span>
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-(--color-text-inverse)/70">
-              Sign in to track every chemical, cabinet, and climate reading
+              Sign in to track every chemical, cabinet, and reading
               across your department — in one place.
             </p>
           </div>
@@ -136,7 +136,7 @@ const Login = () => {
 
         <div className="w-full max-w-sm">
           <div className="bg-(--color-surface) rounded-lg shadow-(--shadow-lg) border border-(--color-border) p-8 sm:p-9">
-            <h2 className="text-2xl font-medium text-(--color-text-primary)">
+            <h2 className="text-3xl font-(family-name:--font-display) font-semibold text-(--color-primary-dark) tracking-tight">
               Welcome back
             </h2>
             <p className="mt-2 text-sm text-(--color-text-secondary)">
