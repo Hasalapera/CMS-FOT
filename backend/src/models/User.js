@@ -1,8 +1,8 @@
-import { DataTypes } from 'sequelize';
+const { DataTypes } = require("sequelize");
 
-export default function UserModel(sequelize) {
+const UserModel = function (sequelize) {
   const User = sequelize.define(
-    'User',
+    "User",
     {
       id: {
         type: DataTypes.UUID,
@@ -13,13 +13,13 @@ export default function UserModel(sequelize) {
         type: DataTypes.STRING(50),
         allowNull: false,
         unique: true,
-        field: 'institutional_id',
+        field: "institutional_id",
       },
 
       fullName: {
         type: DataTypes.STRING(150),
         allowNull: false,
-        field: 'full_name',
+        field: "full_name",
       },
 
       email: {
@@ -31,7 +31,7 @@ export default function UserModel(sequelize) {
       passwordHash: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        field: 'password_hash',
+        field: "password_hash",
       },
 
       role: {
@@ -44,37 +44,38 @@ export default function UserModel(sequelize) {
       },
 
       authSource: {
-        type: DataTypes.ENUM('LOCAL', 'MOODLE'),
+        type: DataTypes.ENUM("LOCAL", "MOODLE"),
         allowNull: false,
-        defaultValue: 'LOCAL',
-        field: 'auth_source',
+        defaultValue: "LOCAL",
+        field: "auth_source",
       },
 
       externalSubject: {
         type: DataTypes.STRING(255),
         allowNull: true,
-        field: 'external_subject',
+        field: "external_subject",
       },
 
       isActive: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-        field: 'is_active',
+        field: "is_active",
       },
 
       lastLoginAt: {
         type: DataTypes.DATE,
         allowNull: true,
-        field: 'last_login_at',
+        field: "last_login_at",
       },
     },
     {
-      tableName: 'users',
+      tableName: "users",
       timestamps: true,
       underscored: true,
-    }
+    },
   );
 
   return User;
-}
+};
+module.exports = UserModel;
