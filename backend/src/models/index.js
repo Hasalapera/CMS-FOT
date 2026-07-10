@@ -1,74 +1,56 @@
 'use strict';
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { Sequelize } from 'sequelize';
-import sequelize from '../database/db.js'; // Import the new db instance
+const sequelize = require('../database/db.js');
+const { DataTypes } = require('sequelize');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const basename = path.basename(__filename);
-const db = {};
-
-// Dynamically load all model files from the current directory
-const modelFiles = fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-3) === '.js' &&
-      file.indexOf('.test.js') === -1
-    );
-  });
-
-// Initialize each model and add it to the db object
-for (const file of modelFiles) {
-  // Use dynamic import for ES Modules
-  const modelDefinition = (await import(path.join(__dirname, file))).default;
-  const model = modelDefinition(sequelize, Sequelize.DataTypes);
-  db[model.name] = model;
-}
+// --- Model Imports & Initialization ---
+const User = require('./User')(sequelize, DataTypes);
+const Chemical = require('./Chemical')(sequelize, DataTypes);
+const Batch = require('./Batch')(sequelize, DataTypes);
+const Location = require('./Location')(sequelize, DataTypes);
 
 // --- Centralized Model Associations ---
-// Destructure models for easier access.
-// This is where you will define all relationships between your models.
-const { Chemical, User, Batch, ChemicalHazard } = db;
 
-// Check if models exist before creating associations to avoid errors
-if (Chemical && User) {
-  // A Chemical is associated with the User who uploaded its SDS
-  Chemical.belongsTo(User, {
-    foreignKey: 'sdsUploadedById',
-    as: 'sdsUploader',
-  });
+// 1. Chemical <-> User (SDS Uploader)
+Chemical.belongsTo(User, {
+  foreignKey: 'sdsUploadedById',
+  as: 'sdsUploader',
+});
+User.hasMany(Chemical, {
+  foreignKey: 'sdsUploadedById',
+  as: 'uploadedSdsChemicals',
+});
 
-  // A User can be associated with many Chemicals for which they uploaded the SDS
-  User.hasMany(Chemical, {
-    foreignKey: 'sdsUploadedById',
-    as: 'uploadedSdsChemicals',
-  });
-}
+// 2. Chemical <-> Batch
+Chemical.hasMany(Batch, {
+  foreignKey: 'chemicalId',
+  as: 'batches',
+  onDelete: 'CASCADE',
+});
+Batch.belongsTo(Chemical, {
+  foreignKey: 'chemicalId',
+  as: 'chemical',
+});
 
-if (Chemical && Batch) {
-  // A Chemical can have many Batches
-  Chemical.hasMany(Batch, {
-    foreignKey: 'chemicalId',
-    as: 'batches',
-    onDelete: 'CASCADE',
-  });
+// 3. Batch <-> Location
+Batch.belongsTo(Location, {
+  foreignKey: 'locationId',
+  as: 'location',
+});
+Location.hasMany(Batch, {
+  foreignKey: 'locationId',
+  as: 'batches',
+});
 
-  // A Batch belongs to one Chemical
-  Batch.belongsTo(Chemical, {
-    foreignKey: 'chemicalId',
-    as: 'chemical',
-  });
-}
+// 4. Location <-> Location (Self-referencing for hierarchy)
+Location.hasMany(Location, {
+  as: 'children',
+  foreignKey: 'parentLocationId',
+});
+Location.belongsTo(Location, {
+  as: 'parent',
+  foreignKey: 'parentLocationId',
+});
 
-// --- End of Associations ---
-
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
-
-export default db;
+// --- Exports ---
+module.exports = { sequelize, User, Chemical, Batch, Location };

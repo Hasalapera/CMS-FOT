@@ -1,6 +1,6 @@
-import { DataTypes } from 'sequelize';
+const { DataTypes } = require('sequelize');
 
-export default function ChemicalModel(sequelize) {
+module.exports = function ChemicalModel(sequelize) {
   const Chemical = sequelize.define(
     'Chemical',
     {

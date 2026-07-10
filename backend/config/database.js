@@ -21,8 +21,6 @@ if (!url) {
   );
 }
 
-// sequelize-cli officially supports use_env_variable. A dedicated temporary
-// environment variable lets migrations use a different URL from app traffic.
 process.env.SEQUELIZE_DATABASE_URL = url;
 
 const sslEnabled = process.env.DB_SSL === 'true';
