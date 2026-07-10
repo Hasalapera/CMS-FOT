@@ -9,21 +9,20 @@ const Home = () => {
     <div className="min-h-screen w-full flex flex-col bg-[var(--color-bg)] font-[family-name:var(--font-body)]">
       {/* ---------------- Header ---------------- */}
       <header className="w-full border-b border-[var(--color-primary-dark)] bg-[var(--color-primary)] color-transition">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
-          {/* Faculty logo placeholder */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-7 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
+          {/* Faculty Logo */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full border-2 border-dashed border-[var(--color-primary-light)] bg-[var(--color-primary-dark)] flex items-center justify-center color-transition">
-              <Building2
-                className="w-5 h-5 text-[var(--color-text-inverse)]"
-                strokeWidth={1.6}
-              />
-            </div>
+            <img
+              src="/logoFac.jpg"
+              alt="Faculty Logo"
+              className="w-15 h-15 sm:w-15 sm:h-15 shrink-0 rounded-full object-cover border-2 border-[var(--color-primary-light)] shadow-sm bg-white"
+            />
             <div className="min-w-0">
               <p className="font-[family-name:var(--font-display)] text-sm sm:text-base font-semibold text-[var(--color-text-inverse)] leading-none truncate color-transition">
-                Faculty Logo
+              Faculty Laboratory Chemical Management System
               </p>
-              <p className="text-[11px] sm:text-xs text-[var(--color-primary-tint)] mt-1 truncate color-transition">
-                Placeholder — replace with faculty crest
+              <p className="text-[11px] sm:text-xs text-[var(--color-primary-tint)] mt-1 truncate color-transition hidden sm:block">
+               Faculty Of Technology 
               </p>
             </div>
           </div>
