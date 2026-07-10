@@ -9,7 +9,9 @@ import {
   ShieldCheck,
   Thermometer,
   ScanLine,
+  ArrowLeft,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -90,8 +92,8 @@ const Login = () => {
               </span>
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-(--color-text-inverse)/70">
-              Sign in to track every chemical, cabinet, and reading
-              across your department — in one place.
+              Sign in to track every chemical, cabinet, and reading across your
+              department — in one place.
             </p>
           </div>
 
@@ -116,6 +118,15 @@ const Login = () => {
 
       {/* ---------------- Right form panel ---------------- */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-10 py-12 relative">
+        {/* Back Button */}
+        <Link
+          to="/"
+          className="absolute top-4 left-4 sm:top-6 sm:left-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-lg border border-(--color-border) bg-(--color-surface) px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-(--color-text-secondary) shadow-(--shadow-sm) transition-all duration-200 hover:-translate-x-1 hover:bg-(--color-primary-tint) hover:text-(--color-primary)"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Back to Home</span>
+          <span className="sm:hidden">Home</span>
+        </Link>
         {/* Mobile-only brand header */}
         <div className="lg:hidden flex items-center gap-3 mb-10">
           <div className="w-10 h-10 rounded-full bg-(--color-primary-tint) flex items-center justify-center">
