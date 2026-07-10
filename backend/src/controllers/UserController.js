@@ -19,14 +19,13 @@ const createUser = async (req, res) => {
         .json({ error: "User with this institutional ID already exists" });
     }
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = new User({
+    const user = await User.create({
       institutionalId,
       fullName,
       email,
       passwordHash,
       role,
     });
-    await user.save();
     res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
     console.error("Error creating user:", error);
