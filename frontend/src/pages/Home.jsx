@@ -1,5 +1,6 @@
 import React from "react";
 import { LogIn, Building2, Boxes } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   const placeholderSlots = Array.from({ length: 8 });
@@ -28,13 +29,13 @@ const Home = () => {
           </div>
 
           {/* Login button */}
-          <button
-            type="button"
+          <Link
+            to="/login"
             className="shrink-0 inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full border border-[var(--color-text-inverse)] text-[var(--color-text-inverse)] text-sm font-medium hover:bg-[var(--color-text-inverse)] hover:text-[var(--color-primary)] color-transition cursor-pointer"
           >
             <LogIn className="w-4 h-4" strokeWidth={1.8} />
             <span>Login</span>
-          </button>
+          </Link>
         </div>
       </header>
 
