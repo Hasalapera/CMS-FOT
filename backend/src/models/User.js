@@ -36,13 +36,11 @@ export default function UserModel(sequelize) {
 
       role: {
         type: DataTypes.ENUM(
-          'STUDENT',
           'LECTURER',
           'TECHNICAL_OFFICER',
           'ADMIN'
         ),
         allowNull: false,
-        defaultValue: 'STUDENT',
       },
 
       authSource: {
