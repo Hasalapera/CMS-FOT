@@ -135,7 +135,7 @@ const Login = () => {
         </div>
 
         <div className="w-full max-w-sm">
-          <div className="bg-(--color-surface) rounded-lg shadow-[var(--shadow-lg)] border border-(--color-border) p-8 sm:p-9">
+          <div className="bg-(--color-surface) rounded-lg shadow-(--shadow-lg) border border-(--color-border) p-8 sm:p-9">
             <h2 className="text-2xl font-medium text-(--color-text-primary)">
               Welcome back
             </h2>
@@ -191,7 +191,7 @@ const Login = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-sm border border-(--color-border) bg-(--color-surface) text-sm text-(--color-text-primary) placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/40 focus:border-[var(--color-accent)] transition-colors"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-sm border border-(--color-border) bg-(--color-surface) text-sm text-(--color-text-primary) placeholder:text-(--color-text-muted) focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 focus:border-(--color-accent) transition-colors"
                   />
                   <button
                     type="button"
@@ -224,7 +224,7 @@ const Login = () => {
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-sm bg-(--color-primary) hover:bg-(--color-primary-light) text-(--color-text-inverse) text-sm font-medium shadow-[var(--shadow-sm)] transition-colors"
+                className="w-full py-2.5 rounded-sm bg-(--color-primary) hover:bg-(--color-primary-light) text-(--color-text-inverse) text-sm font-medium shadow-(--shadow-sm) transition-colors"
               >
                 Sign in
               </button>
