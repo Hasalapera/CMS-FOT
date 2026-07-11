@@ -6,7 +6,9 @@ module.exports = function (sequelize) {
     {
       id: {
         type: DataTypes.UUID,
+        allowNull: false,
         primaryKey: true,
+        defaultValue: DataTypes.UUIDV4,
       },
 
       institutionalId: {
