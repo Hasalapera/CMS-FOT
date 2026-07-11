@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   FlaskConical,
   Landmark,
@@ -10,15 +10,16 @@ import {
   Thermometer,
   ScanLine,
   ArrowLeft,
-} from 'lucide-react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+  IdCard,
+} from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [institutionalId, setInstitutionalId] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [institutionalId, setInstitutionalId] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Login = () => {
   const { login } = useAuth();
 
   // Redirect to the page the user came from, or to a default authed page
-  const from = location.state?.from?.pathname || '/add-chemical';
+  const from = location.state?.from?.pathname || "/chemicals/add-chemical";
 
   const features = [
     { icon: Landmark, label: "Hierarchical location structure" },
@@ -37,11 +38,11 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     if (!institutionalId || !password) {
-      setError('Both institutional ID and password are required.');
+      setError("Both institutional ID and password are required.");
       setLoading(false);
       return;
     }
@@ -50,7 +51,10 @@ const Login = () => {
       await login(institutionalId, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(
+        err.response?.data?.message ||
+          "Login failed. Please check your credentials.",
+      );
     } finally {
       setLoading(false);
     }
@@ -204,8 +208,8 @@ const Login = () => {
                   Institutional ID
                 </label>
                 <div className="relative">
-                  <User
-                    className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+                  <IdCard
+                    className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
                     strokeWidth={1.8}
                   />
                   <input
@@ -214,7 +218,7 @@ const Login = () => {
                     value={institutionalId}
                     onChange={(e) => setInstitutionalId(e.target.value)}
                     autoComplete="username"
-                    placeholder="e.g. TO/001"
+                    placeholder="R000001"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/40 focus:border-[var(--color-accent)] transition-colors"
                   />
                 </div>
@@ -229,12 +233,6 @@ const Login = () => {
                   >
                     Password
                   </label>
-                  <a
-                    href="#"
-                    className="text-xs font-medium text-[var(--color-accent-dark)] hover:text-[var(--color-accent)]"
-                  >
-                    Forgot password?
-                  </a>
                 </div>
                 <div className="relative">
                   <Lock
@@ -284,7 +282,7 @@ const Login = () => {
                 disabled={loading}
                 className="w-full py-2.5 rounded-sm bg-[var(--color-primary)] hover:bg-[var(--color-primary-light)] text-[var(--color-text-inverse)] text-sm font-medium shadow-[var(--shadow-sm)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
 
