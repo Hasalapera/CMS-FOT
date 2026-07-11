@@ -55,6 +55,9 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    if (!user.isActive) {
+      return res.status(403).json({ error: "User account is deleted" });
+    }
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -106,6 +109,7 @@ const viewUsers = async (req, res) => {
   try {
     const users = await User.findAll({
       attributes: [
+        "id",
         "institutionalId",
         "fullName",
         "email",
@@ -120,9 +124,50 @@ const viewUsers = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+    const adminId = req.user.id;
+
+    if (!password) {
+      return res
+        .status(400)
+        .json({ error: "Password is required to confirm deletion" });
+    }
+
+    const adminUser = await User.findByPk(adminId);
+    if (!adminUser) {
+      return res.status(404).json({ error: "Admin user not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, adminUser.passwordHash);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ error: "Incorrect password. Deletion failed." });
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (user.role === "ADMIN" || user.role === "TECHNICAL_OFFICER") {
+      await user.update({ isActive: false });
+      return res.json({ message: `${user.role} deactivated successfully` });
+    }
+
+    await user.destroy();
+    return res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 module.exports = {
   createUser,
   loginUser,
   changePassword,
   viewUsers,
+  deleteUser,
 };

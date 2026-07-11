@@ -15,6 +15,7 @@ import {
   Users,
   X,
   XCircle,
+  Key,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axiosInstance";
@@ -71,6 +72,7 @@ const ViewUsers = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -108,12 +110,20 @@ const ViewUsers = () => {
 
   const handleDeleteConfirm = async () => {
     if (!userToDelete) return;
+    if (!adminPassword.trim()) {
+      setDeleteError("Please enter your password to confirm.");
+      return;
+    }
     try {
       setIsDeleting(true);
       setDeleteError("");
-      await api.delete(`/users/${userToDelete.id}`);
-      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      await api.delete(`/users/deleteuser/${userToDelete.id}`, {
+        data: { password: adminPassword },
+      });
+      const response = await api.get("/users/viewusers");
+      setUsers(response.data?.users || response.data || []);
       setUserToDelete(null);
+      setAdminPassword("");
     } catch (error) {
       setDeleteError(
         error.response?.data?.error ||
@@ -395,7 +405,13 @@ const ViewUsers = () => {
           <div className="relative w-full max-w-sm rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-lg)]">
             <button
               type="button"
-              onClick={() => !isDeleting && setUserToDelete(null)}
+              onClick={() => {
+                if (!isDeleting) {
+                  setUserToDelete(null);
+                  setAdminPassword("");
+                  setDeleteError("");
+                }
+              }}
               aria-label="Close"
               className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-muted)] color-transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
             >
@@ -417,6 +433,29 @@ const ViewUsers = () => {
               immediately. This action cannot be undone.
             </p>
 
+            <div className="mt-4">
+              <label className="mb-1.5 block text-xs font-semibold text-[var(--color-text-primary)]">
+                Confirm your password
+              </label>
+              <div className="relative">
+                <Key
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+                />
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => {
+                    setAdminPassword(e.target.value);
+                    if (deleteError) setDeleteError("");
+                  }}
+                  placeholder="Enter your password"
+                  className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] color-transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+
             {deleteError && (
               <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[var(--color-danger)]">
                 <AlertTriangle size={14} />
@@ -427,7 +466,11 @@ const ViewUsers = () => {
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => setUserToDelete(null)}
+                onClick={() => {
+                  setUserToDelete(null);
+                  setAdminPassword("");
+                  setDeleteError("");
+                }}
                 disabled={isDeleting}
                 className="inline-flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] color-transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
               >

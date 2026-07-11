@@ -153,7 +153,7 @@ const AddUsers = () => {
       });
 
       setTimeout(() => {
-        navigate("/users/list");
+        navigate("/admin/users/view");
       }, 1500);
     } catch (error) {
       setSubmitMessage({
