@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/Common/ProtectedRoute";
 import DashboardLayout from "./components/Layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import AddUsers from "./components/AddUsers";
+import PasswordReset from "./components/PasswordReset";
 
 function App() {
   return (
@@ -15,7 +16,6 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/add-users" element={<AddUsers />} />
         <Route
           element={
             <ProtectedRoute>
@@ -27,6 +27,8 @@ function App() {
           <Route path="/chemicals/add-chemical" element={<AddChemical />} />
           {/* Add other dashboard routes like '/chemicals/list' here when you create them */}
         </Route>
+        <Route path="/reset-password" element={<PasswordReset />} />
+        <Route path="/add-users" element={<AddUsers />} />
       </Routes>
     </AuthProvider>
   );
