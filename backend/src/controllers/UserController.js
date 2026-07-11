@@ -46,6 +46,7 @@ const loginUser = async (req, res) => {
     if (!institutionalId || !password) {
       return res.status(400).json({ error: "Both fields are required" });
     }
+    institutionalId = institutionalId.toUpperCase();
     const user = await User.findOne({
       where: {
         institutionalId,
