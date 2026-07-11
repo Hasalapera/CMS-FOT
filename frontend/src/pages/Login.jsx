@@ -51,8 +51,13 @@ const Login = () => {
       await login(institutionalId, password);
       navigate(from, { replace: true });
     } catch (err) {
+      if (err.response?.status === 403) {
+        setError("User account is deleted");
+        return;
+      }
+
       setError(
-        err.response?.data?.message ||
+        err.response?.data?.error ||
           "Login failed. Please check your credentials.",
       );
     } finally {

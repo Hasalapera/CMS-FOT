@@ -33,23 +33,13 @@ const MAIN_MENU_ITEMS = [
     label: "Dashboard",
     path: "/dashboard",
     icon: LayoutDashboard,
-    roles: [
-      "ADMIN",
-      "TECHNICAL_OFFICER",
-      "LECTURER",
-      "STUDENT",
-    ],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
   },
   {
     label: "Chemicals",
     icon: FlaskConical,
     pathPrefix: "/chemicals",
-    roles: [
-      "ADMIN",
-      "TECHNICAL_OFFICER",
-      "LECTURER",
-      "STUDENT",
-    ],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
     children: [
       {
         label: "View All Chemicals",
@@ -93,6 +83,11 @@ const MAIN_MENU_ITEMS = [
     ],
   },
   {
+    label: "SDS Library",
+    path: "/sds-library",
+    icon: FileText,
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+
     label: "Procurement & Stock",
     icon: Truck,
     pathPrefix: "/stock",
@@ -127,9 +122,21 @@ const MAIN_MENU_ITEMS = [
 const ADMIN_MENU_ITEMS = [
   {
     label: "Users & Roles",
-    path: "/admin/users",
     icon: Users,
+    pathPrefix: "/admin/users",
     roles: ["ADMIN"],
+    children: [
+      {
+        label: "View System Users",
+        path: "/admin/users/view",
+        roles: ["ADMIN"],
+      },
+      {
+        label: "Add User",
+        path: "/admin/users/add",
+        roles: ["ADMIN"],
+      },
+    ],
   },
   {
     label: "Settings",
@@ -187,9 +194,7 @@ const SidebarLink = ({ item, closeMobileMenu }) => {
             <Icon size={18} strokeWidth={2} />
           </span>
 
-          <span className="min-w-0 flex-1 truncate">
-            {item.label}
-          </span>
+          <span className="min-w-0 flex-1 truncate">{item.label}</span>
 
           {isActive && (
             <ChevronRight
@@ -218,7 +223,7 @@ const CollapsibleSidebarLink = ({ item, closeMobileMenu, userRole }) => {
 
   const filteredChildren = useMemo(
     () => item.children.filter((child) => child.roles.includes(userRole)),
-    [item.children, userRole]
+    [item.children, userRole],
   );
 
   if (filteredChildren.length === 0) {
@@ -260,7 +265,20 @@ const CollapsibleSidebarLink = ({ item, closeMobileMenu, userRole }) => {
       {isOpen && (
         <div className="mt-1.5 space-y-1.5 pl-8">
           {filteredChildren.map((child) => (
-            <NavLink key={child.path} to={child.path} onClick={closeMobileMenu} className={({ isActive }) => ["group flex items-center gap-3 rounded-[var(--radius-sm)] px-3.5 py-2.5", "text-sm font-medium color-transition", isActive ? "bg-[var(--color-primary-light)] text-[var(--color-text-inverse)]" : "text-[var(--color-text-inverse)]/70 hover:bg-[var(--color-primary-light)]/50 hover:text-[var(--color-text-inverse)]"].join(" ")}>
+            <NavLink
+              key={child.path}
+              to={child.path}
+              onClick={closeMobileMenu}
+              className={({ isActive }) =>
+                [
+                  "group flex items-center gap-3 rounded-[var(--radius-sm)] px-3.5 py-2.5",
+                  "text-sm font-medium color-transition",
+                  isActive
+                    ? "bg-[var(--color-primary-light)] text-[var(--color-text-inverse)]"
+                    : "text-[var(--color-text-inverse)]/70 hover:bg-[var(--color-primary-light)]/50 hover:text-[var(--color-text-inverse)]",
+                ].join(" ")
+              }
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               <span className="min-w-0 flex-1 truncate">{child.label}</span>
             </NavLink>
@@ -336,7 +354,7 @@ const SidebarContent = ({
                   item={item}
                   closeMobileMenu={closeMobileMenu}
                 />
-              )
+              ),
             )}
           </nav>
         </div>
@@ -348,13 +366,22 @@ const SidebarContent = ({
             </p>
 
             <nav className="space-y-1.5">
-              {adminItems.map((item) => (
-                <SidebarLink
-                  key={item.path}
-                  item={item}
-                  closeMobileMenu={closeMobileMenu}
-                />
-              ))}
+              {adminItems.map((item) =>
+                item.children ? (
+                  <CollapsibleSidebarLink
+                    key={item.label}
+                    item={item}
+                    closeMobileMenu={closeMobileMenu}
+                    userRole={userRole}
+                  />
+                ) : (
+                  <SidebarLink
+                    key={item.path}
+                    item={item}
+                    closeMobileMenu={closeMobileMenu}
+                  />
+                ),
+              )}
             </nav>
           </div>
         )}
@@ -419,17 +446,13 @@ const Sidebar = () => {
   const role = user?.role || "STUDENT";
 
   const mainItems = useMemo(
-    () =>
-      MAIN_MENU_ITEMS.filter((item) => item.roles.includes(role)),
-    [role]
+    () => MAIN_MENU_ITEMS.filter((item) => item.roles.includes(role)),
+    [role],
   );
 
   const adminItems = useMemo(
-    () =>
-      ADMIN_MENU_ITEMS.filter((item) =>
-        item.roles.includes(role)
-      ),
-    [role]
+    () => ADMIN_MENU_ITEMS.filter((item) => item.roles.includes(role)),
+    [role],
   );
 
   const closeMobileMenu = () => {
@@ -503,8 +526,7 @@ const Sidebar = () => {
         >
           <Bell size={21} />
 
-          {(role === "ADMIN" ||
-            role === "TECHNICAL_OFFICER") && (
+          {(role === "ADMIN" || role === "TECHNICAL_OFFICER") && (
             <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[9px] font-bold text-[var(--color-primary-dark)]">
               3
             </span>
@@ -527,9 +549,7 @@ const Sidebar = () => {
       <div
         className={[
           "fixed inset-0 z-50 lg:hidden",
-          mobileOpen
-            ? "pointer-events-auto"
-            : "pointer-events-none",
+          mobileOpen ? "pointer-events-auto" : "pointer-events-none",
         ].join(" ")}
         aria-hidden={!mobileOpen}
       >
@@ -537,7 +557,8 @@ const Sidebar = () => {
           type="button"
           aria-label="Close navigation menu"
           onClick={closeMobileMenu}
-          className={[ // Overlay
+          className={[
+            // Overlay
             "absolute inset-0 bg-[var(--color-primary-dark)]/75 backdrop-blur-[2px] transition-opacity duration-300",
             mobileOpen ? "opacity-100" : "opacity-0",
           ].join(" ")}
@@ -551,9 +572,7 @@ const Sidebar = () => {
             "absolute inset-y-0 left-0 w-[86%] max-w-[330px]",
             "bg-[var(--color-primary-dark)] shadow-[var(--shadow-lg)]",
             "transition-transform duration-300 ease-out",
-            mobileOpen
-              ? "translate-x-0"
-              : "-translate-x-full",
+            mobileOpen ? "translate-x-0" : "-translate-x-full",
           ].join(" ")}
         >
           <button
