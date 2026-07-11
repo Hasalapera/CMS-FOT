@@ -35,11 +35,11 @@ function App() {
             element={<ViewDeactivatedChemicals />}
           />
           <Route path="/admin/users/add" element={<AddUsers />} />
+          {/* <Route path="/admin/users/view" element={<ViewUsers />} /> */}
         </Route>
 
         {/* Component testing routes */}
         <Route path="/reset-password" element={<PasswordReset />} />
-        {/* <Route path="/admin/users/view" element={<ViewUsers />} /> */}
       </Routes>
     </AuthProvider>
   );

@@ -367,7 +367,9 @@ const AddUsers = () => {
                               {r
                                 .toLowerCase()
                                 .split("_")
-                                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                                .map(
+                                  (w) => w.charAt(0).toUpperCase() + w.slice(1),
+                                )
                                 .join(" ")}
                             </option>
                           ))}
@@ -394,7 +396,7 @@ const AddUsers = () => {
                     <InputLabel
                       htmlFor="password"
                       required
-                      description="Min 8 characters, include a number and a symbol."
+                      description="Min 6 characters, include a number and a symbol."
                     >
                       Temporary password
                     </InputLabel>
@@ -418,10 +420,16 @@ const AddUsers = () => {
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
                       </button>
                     </div>
                     <ErrorMessage message={errors.password} />
