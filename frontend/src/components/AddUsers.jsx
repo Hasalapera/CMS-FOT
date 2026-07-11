@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   ChevronDown,
 } from "lucide-react";
+import api from "../api/axiosInstance";
 
 const AddUsers = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,10 +23,61 @@ const AddUsers = () => {
     password: "",
     role: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const roles = ["LECTURER", "TECHNICAL_OFFICER", "ADMIN"];
 
   const handleChange = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    if (
+      !form.institutionalId ||
+      !form.fullName ||
+      !form.email ||
+      !form.password ||
+      !form.role
+    ) {
+      setError("All fields are required.");
+      return;
+    }
+    try {
+      setLoading(true);
+      const response = await api.post("/users/register", {
+        institutionalId: form.institutionalId,
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+      });
+      setSuccess("User created successfully.");
+      setForm({
+        institutionalId: "",
+        fullName: "",
+        email: "",
+        password: "",
+        role: "",
+      });
+      setTimeout(() => {
+        setIsOpen(false);
+        setSuccess("");
+      }, 1500);
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Failed to create user.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -79,7 +131,21 @@ const AddUsers = () => {
             </div>
 
             {/* Form */}
-            <form className="px-6 sm:px-7 py-6 space-y-5">
+            <form
+              onSubmit={handleSubmit}
+              className="px-6 sm:px-7 py-6 space-y-5"
+            >
+              {error && (
+                <div className="rounded-md bg-red-100 border border-red-300 text-red-700 px-3 py-2 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="rounded-md bg-green-100 border border-green-300 text-green-700 px-3 py-2 text-sm">
+                  {success}
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {/* Institutional ID */}
                 <div>
@@ -230,25 +296,36 @@ const AddUsers = () => {
                   change it after first login.
                 </p>
               </div>
+              {/* Footer actions */}
+              <div className="sticky bottom-0 bg-[var(--color-surface)] px-6 sm:px-7 py-5 border-t border-[var(--color-border)] flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    setError("");
+                    setSuccess("");
+                    setForm({
+                      institutionalId: "",
+                      fullName: "",
+                      email: "",
+                      password: "",
+                      role: "",
+                    });
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[var(--radius-sm)] bg-[var(--color-primary)] hover:bg-[var(--color-primary-light)] text-[var(--color-text-inverse)] text-sm font-medium shadow-[var(--shadow-sm)] transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" strokeWidth={1.8} />
+                  {loading ? "Creating..." : "Add User"}
+                </button>
+              </div>
             </form>
-
-            {/* Footer actions */}
-            <div className="sticky bottom-0 bg-[var(--color-surface)] px-6 sm:px-7 py-5 border-t border-[var(--color-border)] flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[var(--radius-sm)] bg-[var(--color-primary)] hover:bg-[var(--color-primary-light)] text-[var(--color-text-inverse)] text-sm font-medium shadow-[var(--shadow-sm)] transition-colors"
-              >
-                <UserPlus className="w-4 h-4" strokeWidth={1.8} />
-                Add User
-              </button>
-            </div>
           </div>
         </div>
       )}
