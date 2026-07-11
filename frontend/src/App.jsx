@@ -27,6 +27,8 @@ function App() {
           <Route path="/chemicals/add-chemical" element={<AddChemical />} />
           {/* Add other dashboard routes like '/chemicals/list' here when you create them */}
         </Route>
+
+        {/* Component testing routes */}
         <Route path="/reset-password" element={<PasswordReset />} />
         <Route path="/add-users" element={<AddUsers />} />
       </Routes>
