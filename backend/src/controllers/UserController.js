@@ -7,6 +7,13 @@ const createUser = async (req, res) => {
     if (!institutionalId || !fullName || !email || !password || !role) {
       return res.status(400).json({ error: "Missing required fields" });
     }
+    const institutionalIdRegex = /^R\d{6}$/;
+    if (!institutionalIdRegex.test(institutionalId)) {
+      return res.status(400).json({
+        error:
+          "Institutional ID must be in the format R123456 (capital R followed by 6 digits).",
+      });
+    }
     const existingUser = await User.findOne({
       where: {
         institutionalId,
