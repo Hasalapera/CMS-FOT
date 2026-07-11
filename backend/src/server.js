@@ -11,20 +11,28 @@ const sequelize = require('./database/db.js');
 const db = require('./models/index.js');
 
 const userRoutes = require('./routes/UserRoute.js');
+const chemicalRoutes = require('./routes/ChemicalRoute.js');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "FLCMS API is running",
+    message: "CMS API is running",
   });
 });
 app.use('/api/users', userRoutes);
+app.use('/api/chemicals', chemicalRoutes);
 
 const startServer = async () => {
   try {
@@ -38,10 +46,10 @@ const startServer = async () => {
     }
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      console.log(`Server is running on http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error("\n❌ Server startup failed:");
+    console.error("\nServer startup failed:");
     console.error(error);
     process.exit(1);
   }
