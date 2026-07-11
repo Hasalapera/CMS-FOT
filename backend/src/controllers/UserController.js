@@ -102,9 +102,27 @@ const changePassword = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
+const viewUsers = async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: [
+        "institutionalId",
+        "fullName",
+        "email",
+        "role",
+        "isActive",
+        "lastLoginAt",
+      ],
+    });
+    res.json(users);
+  } catch (error) {
+    console.error("Error viewing users:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 module.exports = {
   createUser,
   loginUser,
   changePassword,
+  viewUsers,
 };
