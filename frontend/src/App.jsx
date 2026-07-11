@@ -11,6 +11,7 @@ import ViewChemicals from "./pages/chemicals/ViewChemicals";
 import ChemicalDetails from "./pages/chemicals/ChemicalDetails";
 import ViewDeactivatedChemicals from "./pages/chemicals/ViewDeactivatedChemicals";
 import AddUsers from "./pages/admin/AddUsers";
+import ViewUsers from "./pages/admin/ViewUsers";
 import PasswordReset from "./components/PasswordReset";
 
 function App() {
@@ -35,7 +36,7 @@ function App() {
             element={<ViewDeactivatedChemicals />}
           />
           <Route path="/admin/users/add" element={<AddUsers />} />
-          {/* <Route path="/admin/users/view" element={<ViewUsers />} /> */}
+          <Route path="/admin/users/view" element={<ViewUsers />} />
         </Route>
 
         {/* Component testing routes */}
