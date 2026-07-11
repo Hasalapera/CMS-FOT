@@ -42,7 +42,7 @@ const createUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { institutionalId, password } = req.body;
+    let { institutionalId, password } = req.body;
     if (!institutionalId || !password) {
       return res.status(400).json({ error: "Both fields are required" });
     }
