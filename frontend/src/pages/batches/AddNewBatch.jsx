@@ -29,6 +29,65 @@ const INITIAL_FORM = {
   locationId: "",
 };
 
+const SuccessModal = ({ batch, onAddNew, onViewList }) => {
+  const qrValue = `${window.location.origin}/stock/batches/${batch.id}`;
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Print QR Code</title>');
+    printWindow.document.write(`
+      <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        h1 { font-size: 16px; margin: 0 0 5px 0; }
+        p { font-size: 12px; margin: 0 0 15px 0; }
+        svg { width: 150px; height: 150px; }
+      </style>
+    `);
+    printWindow.document.write('</head><body>');
+    const qrContainer = document.getElementById('qr-code-for-print');
+    if (qrContainer) {
+      printWindow.document.write(qrContainer.innerHTML);
+    }
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="relative w-full max-w-md rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-6 shadow-lg">
+        <div className="text-center">
+          <CheckCircle2 size={48} className="mx-auto text-[var(--color-success)]" />
+          <h3 className="mt-4 text-xl font-bold text-[var(--color-text-primary)]">Batch Added Successfully!</h3>
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">The new batch for <strong className="text-[var(--color-text-primary)]">{batch.chemical?.canonicalName}</strong> has been created.</p>
+
+          <div id="qr-code-for-print" className="mt-6 flex flex-col items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
+            <QRCodeSVG value={qrValue} size={150} includeMargin={true} />
+            <h1 className="mt-3 font-bold text-[var(--color-text-primary)]">{batch.chemical?.canonicalName}</h1>
+            <p className="text-sm text-[var(--color-text-secondary)]">Batch: {batch.batchNumber}</p>
+          </div>
+
+          <button onClick={handlePrint} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]">
+            <Printer size={16} /> Print QR Label
+          </button>
+        </div>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button onClick={onAddNew} className="inline-flex justify-center rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-primary)]">
+            Add Another Batch
+          </button>
+          <button onClick={onViewList} className="inline-flex justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] px-4 py-2.5 text-sm font-bold text-white">
+            View All Batches
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const InputLabel = ({ children, required = false, description, htmlFor }) => (
   <div className="mb-2">
     <label
@@ -61,7 +120,8 @@ const AddNewBatch = () => {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState(null);
+  const [successBatch, setSuccessBatch] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const [chemicals, setChemicals] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -104,7 +164,7 @@ const AddNewBatch = () => {
         }
       } catch (error) {
         console.error("Failed to fetch initial data:", error);
-        setSubmitMessage({
+        setErrorMessage({
           type: "error",
           text: "Could not load required data. Please try again later.",
         });
@@ -124,7 +184,7 @@ const AddNewBatch = () => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
-    setSubmitMessage(null);
+    setErrorMessage(null);
   };
 
   const validateForm = () => {
@@ -145,16 +205,13 @@ const AddNewBatch = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validateForm()) {
-      setSubmitMessage({
-        type: "error",
-        text: "Please correct the highlighted fields.",
-      });
+      setErrorMessage("Please correct the highlighted fields.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      setSubmitMessage(null);
+      setErrorMessage(null);
 
       const payload = {
         ...formData,
@@ -164,26 +221,23 @@ const AddNewBatch = () => {
         locationId: formData.locationId || null,
       };
 
-      // You will need to create this endpoint in your backend
       const response = await api.post("/batches", payload);
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || "Failed to add new batch.");
       }
 
-      setSubmitMessage({
-        type: "success",
-        text: "New stock batch added successfully!",
+      // Fetch the full chemical details for the modal
+      const createdBatch = response.data.batch;
+      const chemicalDetails = chemicals.find(c => c.id === createdBatch.chemicalId);
+      
+      setSuccessBatch({
+        ...createdBatch,
+        chemical: chemicalDetails
       });
 
-      setTimeout(() => {
-        navigate("/stock/batches"); // Redirect to the list of all batches
-      }, 2000);
     } catch (error) {
-      setSubmitMessage({
-        type: "error",
-        text: error.response?.data?.message || error.message || "An unknown error occurred.",
-      });
+      setErrorMessage(error.response?.data?.message || error.message || "An unknown error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -192,10 +246,11 @@ const AddNewBatch = () => {
   const handleReset = () => {
     setFormData(INITIAL_FORM);
     setErrors({});
-    setSubmitMessage(null);
+    setErrorMessage(null);
   };
 
   return (
+    <>
     <div className="min-h-screen bg-[var(--color-bg)]">
     <main
       className="
@@ -418,27 +473,18 @@ const AddNewBatch = () => {
             </div>
 
             {/* Submit message */}
-            {submitMessage && (
+            {errorMessage && (
               <div
                 role="alert"
-                className={`mt-6 flex items-start gap-3 rounded-[var(--radius-md)] border p-4 ${
-                  submitMessage.type === "success"
-                    ? "border-[var(--color-success)] bg-[var(--color-primary-tint)]"
-                    : "border-[var(--color-danger)] bg-[var(--color-surface)]"
-                }`}
+                className="mt-6 flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-surface)] p-4"
               >
-                {submitMessage.type === "success" ? (
-                  <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-[var(--color-success)]" />
-                ) : (
-                  <AlertTriangle size={20} className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
-                )}
-                <p className={`text-sm font-semibold ${
-                  submitMessage.type === "success" ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"
-                }`}>
-                  {submitMessage.text}
+                <AlertTriangle size={20} className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
+                <p className="text-sm font-semibold text-[var(--color-danger)]">
+                  {errorMessage}
                 </p>
               </div>
             )}
+
 
             {/* Bottom actions */}
             <div className="mt-6 flex flex-col-reverse gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)] sm:flex-row sm:items-center sm:justify-between">
@@ -483,6 +529,17 @@ const AddNewBatch = () => {
         </div>
       </main>
     </div>
+    {successBatch && (
+      <SuccessModal
+        batch={successBatch}
+        onAddNew={() => {
+          setSuccessBatch(null);
+          handleReset();
+        }}
+        onViewList={() => navigate("/stock/batches")}
+      />
+    )}
+    </>
   );
 };
 
