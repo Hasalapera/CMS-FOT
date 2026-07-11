@@ -92,7 +92,6 @@ const addChemical = async (req, res) => {
 const getAllChemicals = async (req, res) => {
   try {
     const chemicals = await Chemical.findAll({ // Only fetch active chemicals by default
-      where: { isActive: true },
       order: [['createdAt', 'DESC']],
     });
     res.status(200).json({

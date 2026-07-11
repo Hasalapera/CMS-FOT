@@ -65,22 +65,45 @@ const MAIN_MENU_ITEMS = [
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
   },
   {
-    label: "Storage",
-    path: "/storage",
-    icon: Warehouse,
-    roles: ["ADMIN", "TECHNICAL_OFFICER"],
-  },
-  {
     label: "Locations",
-    path: "/locations",
     icon: MapPin,
+    pathPrefix: "/locations",
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
+    children: [
+      {
+        label: "View All Locations",
+        path: "/locations",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+      {
+        label: "Add New Location",
+        path: "/locations/add",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+    ],
   },
   {
     label: "SDS Library",
     path: "/sds-library",
     icon: FileText,
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+
+    label: "Procurement & Stock",
+    icon: Truck,
+    pathPrefix: "/stock",
+    roles: ["ADMIN", "TECHNICAL_OFFICER"],
+    children: [
+      {
+        label: "Add New Stock",
+        path: "/stock/add",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+      {
+        label: "View All Batches",
+        path: "/stock/batches",
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
+      },
+    ],
   },
   {
     label: "Alerts & Notifications",
@@ -92,12 +115,6 @@ const MAIN_MENU_ITEMS = [
     label: "Reports",
     path: "/reports",
     icon: ChartNoAxesCombined,
-    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
-  },
-  {
-    label: "Suppliers",
-    path: "/suppliers",
-    icon: Truck,
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
   },
 ];
