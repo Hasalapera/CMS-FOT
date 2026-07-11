@@ -12,6 +12,8 @@ const db = require('./models/index.js');
 
 const userRoutes = require('./routes/UserRoute.js');
 const chemicalRoutes = require('./routes/ChemicalRoute.js');
+const locationRoutes = require('./routes/LocationRoute.js');
+const batchRoutes = require('./routes/BatchRoute.js');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +38,8 @@ app.get("/", (req, res) => {
 });
 app.use('/api/users', userRoutes);
 app.use('/api/chemicals', chemicalRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/batches', batchRoutes);
 
 const startServer = async () => {
   try {
