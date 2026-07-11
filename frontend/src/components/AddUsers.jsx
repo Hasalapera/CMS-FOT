@@ -80,7 +80,6 @@ const AddUsers = () => {
         role: "",
       });
       setTimeout(() => {
-        setIsOpen(false);
         setSuccess("");
       }, 1500);
     } catch (err) {
@@ -300,7 +299,6 @@ const AddUsers = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setIsOpen(false);
                   setError("");
                   setSuccess("");
                   setForm({
