@@ -10,7 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import ViewChemicals from "./pages/chemicals/ViewChemicals";
 import ChemicalDetails from "./pages/chemicals/ChemicalDetails";
 import ViewDeactivatedChemicals from "./pages/chemicals/ViewDeactivatedChemicals";
-import AddUsers from "./components/AddUsers";
+import AddUsers from "./pages/admin/AddUsers";
 import PasswordReset from "./components/PasswordReset";
 
 function App() {
@@ -30,12 +30,16 @@ function App() {
           <Route path="/chemicals/add-chemical" element={<AddChemical />} />
           <Route path="/chemicals/list" element={<ViewChemicals />} />
           <Route path="/chemicals/:id" element={<ChemicalDetails />} />
-          <Route path="/chemicals/deactivated" element={<ViewDeactivatedChemicals />} />
+          <Route
+            path="/chemicals/deactivated"
+            element={<ViewDeactivatedChemicals />}
+          />
+          <Route path="/admin/users/add" element={<AddUsers />} />
         </Route>
 
         {/* Component testing routes */}
         <Route path="/reset-password" element={<PasswordReset />} />
-        <Route path="/add-users" element={<AddUsers />} />
+        {/* <Route path="/admin/users/view" element={<ViewUsers />} /> */}
       </Routes>
     </AuthProvider>
   );
