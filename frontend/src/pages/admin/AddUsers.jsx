@@ -210,7 +210,7 @@ const AddUsers = () => {
                     </h1>
 
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-inverse)] opacity-80 sm:text-base">
-                      Create a system account for staff or students. They'll
+                      Create a system account for staff. They'll
                       sign in with the temporary password below and set their
                       own on first login.
                     </p>
