@@ -1,5 +1,33 @@
-const { Batch, Chemical } = require('../models/index.js');
+const { Batch, Chemical, Location } = require('../models/index.js');
 const { Op } = require('sequelize');
+
+const getAllBatches = async (req, res) => {
+  try {
+    const batches = await Batch.findAll({
+      include: [
+        {
+          model: Chemical,
+          as: 'chemical',
+          attributes: ['canonicalName', 'chemicalCode', 'baseUnit'],
+        },
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['name'],
+        },
+      ],
+      order: [['receivedDate', 'DESC']],
+    });
+
+    res.status(200).json({
+      success: true,
+      batches,
+    });
+  } catch (error) {
+    console.error('Error fetching batches:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching batches.' });
+  }
+};
 
 const addBatch = async (req, res) => {
   try {
@@ -61,4 +89,5 @@ const addBatch = async (req, res) => {
 
 module.exports = {
   addBatch,
+  getAllBatches,
 };

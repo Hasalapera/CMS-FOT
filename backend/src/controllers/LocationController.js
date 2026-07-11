@@ -12,23 +12,27 @@ const addLocation = async (req, res) => {
       });
     }
 
+    // Explicitly handle empty string for parentLocationId to ensure it's treated as NULL in the query
+    const parentId = (parentLocationId && parentLocationId.trim() !== '') ? parentLocationId : null;
+
     const existingLocation = await Location.findOne({
       where: {
-        name: { [Op.iLike]: name.trim() }
+        name: { [Op.iLike]: name.trim() },
+        parentLocationId: parentId,
       }
     });
 
     if (existingLocation) {
       return res.status(409).json({
         success: false,
-        message: `A location with the name "${name}" already exists.`
+        message: `A location named "${name}" already exists at this level.`
       });
     }
 
     const newLocation = await Location.create({
       name: name.trim(),
       type,
-      parentLocationId: parentLocationId || null,
+      parentLocationId: parentId,
     });
 
     res.status(201).json({

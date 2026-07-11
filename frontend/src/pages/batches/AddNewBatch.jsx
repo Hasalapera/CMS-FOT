@@ -69,19 +69,38 @@ const AddNewBatch = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      const buildLocationPaths = (locations) => {
+        const locationMap = new Map(locations.map(loc => [loc.id, loc]));
+        
+        const getPath = (locationId) => {
+            const path = [];
+            let currentLoc = locationMap.get(locationId);
+            while (currentLoc) {
+              path.unshift(currentLoc.name);
+              currentLoc = locationMap.get(currentLoc.parentLocationId);
+            }
+            return path.join(' > ');
+        };
+
+        return locations.map(loc => ({
+            ...loc,
+            pathName: getPath(loc.id),
+        })).sort((a, b) => a.pathName.localeCompare(b.pathName));
+      };
+
       try {
         setIsLoading(true);
-        // Assuming you have these endpoints. Create them if they don't exist.
         const [chemicalsRes, locationsRes] = await Promise.all([
           api.get("/chemicals"),
-          api.get("/locations"), // You'll need to create this route and controller
+          api.get("/locations"),
         ]);
 
         if (chemicalsRes.data?.success) {
           setChemicals(chemicalsRes.data.chemicals);
         }
         if (locationsRes.data?.success) {
-          setLocations(locationsRes.data.locations);
+          const processedLocations = buildLocationPaths(locationsRes.data.locations);
+          setLocations(processedLocations);
         }
       } catch (error) {
         console.error("Failed to fetch initial data:", error);
@@ -344,8 +363,11 @@ const AddNewBatch = () => {
                         <option value="">
                           {isLoading ? "Loading..." : "Assign later"}
                         </option>
-                        {/* You would map over your fetched locations here */}
-                        {/* <option value="loc1">Lab A - Cabinet 3</option> */}
+                        {locations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.pathName}
+                          </option>
+                        ))}
                       </select>
                       <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
                     </div>
