@@ -6,7 +6,9 @@ module.exports = function (sequelize) {
     {
       id: {
         type: DataTypes.UUID,
+        allowNull: false,
         primaryKey: true,
+        defaultValue: DataTypes.UUIDV4,
       },
 
       institutionalId: {
@@ -35,11 +37,7 @@ module.exports = function (sequelize) {
       },
 
       role: {
-        type: DataTypes.ENUM(
-          'LECTURER',
-          'TECHNICAL_OFFICER',
-          'ADMIN'
-        ),
+        type: DataTypes.ENUM("LECTURER", "TECHNICAL_OFFICER", "ADMIN"),
         allowNull: false,
       },
 
@@ -77,4 +75,4 @@ module.exports = function (sequelize) {
   );
 
   return User;
-}
+};
