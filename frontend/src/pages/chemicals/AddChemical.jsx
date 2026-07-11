@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -8,79 +8,72 @@ import {
   FlaskConical,
   Info,
   Loader2,
+  Paperclip,
   Plus,
   RotateCcw,
   Save,
   ShieldAlert,
   Tag,
   Trash2,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+  UploadCloud,
+  X,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Import the configured Axios instance
-import api from '../../api/axiosInstance';
+import api from "../../api/axiosInstance";
 
 const INITIAL_FORM = {
-  chemicalCode: '',
-  canonicalName: '',
-  stockDimension: 'VOLUME',
-  baseUnit: 'mL',
-  casNumber: '',
-  formula: '',
-  physicalState: 'LIQUID',
-  synonyms: [''],
-  densityValue: '',
-  densityUnit: 'g/cm³',
-  safetySummary: '',
+  chemicalCode: "",
+  canonicalName: "",
+  stockDimension: "VOLUME",
+  baseUnit: "mL",
+  casNumber: "",
+  formula: "",
+  physicalState: "LIQUID",
+  synonyms: [""],
+  densityValue: "",
+  densityUnit: "g/cm³",
+  safetySummary: "",
 };
 
 const STOCK_DIMENSION_OPTIONS = [
   {
-    value: 'MASS',
-    label: 'Mass',
-    description: 'Track using weight, such as g or kg',
-    suggestedUnit: 'g',
+    value: "MASS",
+    label: "Mass",
+    description: "Track using weight, such as g or kg",
+    suggestedUnit: "g",
   },
   {
-    value: 'VOLUME',
-    label: 'Volume',
-    description: 'Track using volume, such as mL or L',
-    suggestedUnit: 'mL',
+    value: "VOLUME",
+    label: "Volume",
+    description: "Track using volume, such as mL or L",
+    suggestedUnit: "mL",
   },
   {
-    value: 'COUNT',
-    label: 'Count',
-    description: 'Track as individual units',
-    suggestedUnit: 'unit',
+    value: "COUNT",
+    label: "Count",
+    description: "Track as individual units",
+    suggestedUnit: "unit",
   },
 ];
 
 const PHYSICAL_STATE_OPTIONS = [
-  { value: 'SOLID', label: 'Solid' },
-  { value: 'LIQUID', label: 'Liquid' },
-  { value: 'GAS', label: 'Gas' },
-  { value: 'OTHER', label: 'Other' },
+  { value: "SOLID", label: "Solid" },
+  { value: "LIQUID", label: "Liquid" },
+  { value: "GAS", label: "Gas" },
+  { value: "OTHER", label: "Other" },
 ];
 
 const BASE_UNIT_OPTIONS = {
-  MASS: ['mg', 'g', 'kg'],
-  VOLUME: ['µL', 'mL', 'L'],
-  COUNT: ['unit'],
+  MASS: ["mg", "g", "kg"],
+  VOLUME: ["µL", "mL", "L"],
+  COUNT: ["unit"],
 };
 
-const DENSITY_UNIT_OPTIONS = [
-  'g/cm³',
-  'g/mL',
-  'kg/L',
-  'kg/m³',
-];
+const DENSITY_UNIT_OPTIONS = ["g/cm³", "g/mL", "kg/L", "kg/m³"];
 
-const InputLabel = ({
-  children,
-  required = false,
-  description,
-  htmlFor,
-}) => (
+const InputLabel = ({ children, required = false, description, htmlFor }) => (
   <div className="mb-2">
     <label
       htmlFor={htmlFor}
@@ -89,10 +82,7 @@ const InputLabel = ({
       {children}
 
       {required && (
-        <span
-          className="text-[var(--color-danger)]"
-          aria-hidden="true"
-        >
+        <span className="text-[var(--color-danger)]" aria-hidden="true">
           *
         </span>
       )}
@@ -106,11 +96,7 @@ const InputLabel = ({
   </div>
 );
 
-const SectionHeader = ({
-  icon: Icon,
-  title,
-  description,
-}) => (
+const SectionHeader = ({ icon: Icon, title, description }) => (
   <div className="mb-6 flex items-start gap-3">
     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-tint)] text-[var(--color-primary)]">
       <Icon size={21} strokeWidth={2.1} />
@@ -146,12 +132,43 @@ const AddChemical = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(null);
+  const [isCodeLoading, setIsCodeLoading] = useState(true);
+  const [sdsFile, setSdsFile] = useState(null);
+
+  useEffect(() => {
+    const fetchNextCode = async () => {
+      try {
+        setIsCodeLoading(true);
+        const response = await api.get("/chemicals/get-next-code");
+        if (response.data?.success) {
+          setFormData((prev) => ({
+            ...prev,
+            chemicalCode: response.data.nextCode,
+          }));
+          // Clear any potential error for chemicalCode
+          setErrors((prev) => {
+            const { chemicalCode, ...rest } = prev;
+            return rest;
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch next chemical code:", error);
+        setErrors((prev) => ({
+          ...prev,
+          chemicalCode: "Could not auto-generate code. Please refresh.",
+        }));
+      } finally {
+        setIsCodeLoading(false);
+      }
+    };
+
+    fetchNextCode();
+  }, []);
 
   const availableBaseUnits = useMemo(
     () =>
-      BASE_UNIT_OPTIONS[formData.stockDimension] ||
-      BASE_UNIT_OPTIONS.VOLUME,
-    [formData.stockDimension]
+      BASE_UNIT_OPTIONS[formData.stockDimension] || BASE_UNIT_OPTIONS.VOLUME,
+    [formData.stockDimension],
   );
 
   const handleChange = (event) => {
@@ -164,7 +181,7 @@ const AddChemical = () => {
 
     setErrors((previous) => ({
       ...previous,
-      [name]: '',
+      [name]: "",
     }));
 
     setSubmitMessage(null);
@@ -174,22 +191,44 @@ const AddChemical = () => {
     const selectedDimension = event.target.value;
 
     const selectedOption = STOCK_DIMENSION_OPTIONS.find(
-      (option) => option.value === selectedDimension
+      (option) => option.value === selectedDimension,
     );
 
     setFormData((previous) => ({
       ...previous,
       stockDimension: selectedDimension,
-      baseUnit: selectedOption?.suggestedUnit || '',
+      baseUnit: selectedOption?.suggestedUnit || "",
     }));
 
     setErrors((previous) => ({
       ...previous,
-      stockDimension: '',
-      baseUnit: '',
+      stockDimension: "",
+      baseUnit: "",
     }));
 
     setSubmitMessage(null);
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setErrors((prev) => ({
+        ...prev,
+        sdsFile: "Invalid file type. Please select a PDF or Word document.",
+      }));
+      return;
+    }
+
+    setSdsFile(file);
+    setErrors((prev) => ({ ...prev, sdsFile: "" }));
   };
 
   const handleSynonymChange = (index, value) => {
@@ -209,20 +248,19 @@ const AddChemical = () => {
   const addSynonym = () => {
     setFormData((previous) => ({
       ...previous,
-      synonyms: [...previous.synonyms, ''],
+      synonyms: [...previous.synonyms, ""],
     }));
   };
 
   const removeSynonym = (index) => {
     setFormData((previous) => {
       const updatedSynonyms = previous.synonyms.filter(
-        (_, synonymIndex) => synonymIndex !== index
+        (_, synonymIndex) => synonymIndex !== index,
       );
 
       return {
         ...previous,
-        synonyms:
-          updatedSynonyms.length > 0 ? updatedSynonyms : [''],
+        synonyms: updatedSynonyms.length > 0 ? updatedSynonyms : [""],
       };
     });
   };
@@ -231,49 +269,37 @@ const AddChemical = () => {
     const nextErrors = {};
 
     if (!formData.chemicalCode.trim()) {
-      nextErrors.chemicalCode = 'Chemical code is required.';
-    } else if (formData.chemicalCode.trim().length < 2) {
-      nextErrors.chemicalCode =
-        'Chemical code must contain at least 2 characters.';
+      nextErrors.chemicalCode = "Chemical code is required.";
     }
 
     if (!formData.canonicalName.trim()) {
-      nextErrors.canonicalName =
-        'Canonical chemical name is required.';
+      nextErrors.canonicalName = "Canonical chemical name is required.";
     }
 
     if (!formData.stockDimension) {
-      nextErrors.stockDimension =
-        'Stock dimension is required.';
+      nextErrors.stockDimension = "Stock dimension is required.";
     }
 
     if (!formData.baseUnit.trim()) {
-      nextErrors.baseUnit = 'Base unit is required.';
+      nextErrors.baseUnit = "Base unit is required.";
     }
 
-    if (
-      formData.densityValue !== '' &&
-      Number(formData.densityValue) < 0
-    ) {
-      nextErrors.densityValue =
-        'Density value cannot be negative.';
+    if (formData.densityValue !== "" && Number(formData.densityValue) < 0) {
+      nextErrors.densityValue = "Density value cannot be negative.";
     }
 
-    if (
-      formData.densityValue !== '' &&
-      !formData.densityUnit.trim()
-    ) {
+    if (formData.densityValue !== "" && !formData.densityUnit.trim()) {
       nextErrors.densityUnit =
-        'Density unit is required when density is provided.';
+        "Density unit is required when density is provided.";
     }
 
     if (
-      formData.densityValue === '' &&
+      formData.densityValue === "" &&
       formData.densityUnit.trim() &&
-      formData.densityUnit !== 'g/cm³'
+      formData.densityUnit !== "g/cm³"
     ) {
       nextErrors.densityValue =
-        'Enter a density value or clear the density unit.';
+        "Enter a density value or clear the density unit.";
     }
 
     setErrors(nextErrors);
@@ -286,26 +312,21 @@ const AddChemical = () => {
     canonicalName: formData.canonicalName.trim(),
     stockDimension: formData.stockDimension,
     baseUnit: formData.baseUnit.trim(),
-    casNumber: formData.casNumber.trim() || null,
-    formula: formData.formula.trim() || null,
-    physicalState: formData.physicalState || null,
+    casNumber: formData.casNumber.trim() ? formData.casNumber.trim() : null,
+    formula: formData.formula.trim() ? formData.formula.trim() : null,
+    physicalState: formData.physicalState,
 
     synonyms: formData.synonyms
-      .map((synonym) => synonym.trim())
+      .map((s) => s.trim())
       .filter(Boolean),
 
     densityValue:
-      formData.densityValue === ''
-        ? null
-        : Number(formData.densityValue),
+      formData.densityValue === "" ? null : Number(formData.densityValue),
 
     densityUnit:
-      formData.densityValue === ''
-        ? null
-        : formData.densityUnit.trim(),
+      formData.densityValue === "" ? null : formData.densityUnit.trim(),
 
-    safetySummary:
-      formData.safetySummary.trim() || null,
+    safetySummary: formData.safetySummary.trim() ? formData.safetySummary.trim() : null,
   });
 
   const handleSubmit = async (event) => {
@@ -313,8 +334,8 @@ const AddChemical = () => {
 
     if (!validateForm()) {
       setSubmitMessage({
-        type: 'error',
-        text: 'Please correct the highlighted fields before saving.',
+        type: "error",
+        text: "Please correct the highlighted fields before saving.",
       });
 
       return;
@@ -324,34 +345,47 @@ const AddChemical = () => {
       setIsSubmitting(true);
       setSubmitMessage(null);
 
+      const formPayload = new FormData();
       const payload = buildPayload();
 
-      console.log('Chemical payload:', payload);
+      // Append all fields from the payload to FormData
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (Array.isArray(value)) {
+            // Stringify arrays to be sent via FormData
+            formPayload.append(key, JSON.stringify(value));
+          } else {
+            formPayload.append(key, value);
+          }
+        }
+      });
 
-      const response = await api.post('/chemicals/add-chemical', payload);
+      if (sdsFile) {
+        formPayload.append("sdsFile", sdsFile);
+      }
+      const response = await api.post("/chemicals/add-chemical", formPayload);
 
       if (!response.data?.success) {
-        throw new Error(
-          response.data?.message || 'Unable to add chemical.'
-        );
+        throw new Error(response.data?.message || "Unable to add chemical.");
       }
 
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       setSubmitMessage({
-        type: 'success',
-        text: 'Chemical details were prepared successfully.',
+        type: "success",
+        text: "Chemical created successfully! You will be redirected shortly.",
       });
 
-      // Enable after API integration:
-      // navigate('/chemicals');
+      setTimeout(() => {
+        navigate('/chemicals/list'); // Redirect to the list page after success
+      }, 2000);
     } catch (error) {
       setSubmitMessage({
-        type: 'error',
+        type: "error",
         text:
           error.response?.data?.message ||
           error.message ||
-          'Unable to add the chemical. Please try again.',
+          "Unable to add the chemical. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -362,11 +396,11 @@ const AddChemical = () => {
     setFormData(INITIAL_FORM);
     setErrors({});
     setSubmitMessage(null);
+    setSdsFile(null);
   };
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
-
       <main
         className="
           min-h-screen
@@ -445,9 +479,9 @@ const AddChemical = () => {
                     </h1>
 
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-inverse)] opacity-80 sm:text-base">
-                      Create the main chemical identity record.
-                      Batch, supplier, expiry and physical stock-unit
-                      details will be managed separately.
+                      Create the main chemical identity record. Batch, supplier,
+                      expiry and physical stock-unit details will be managed
+                      separately.
                     </p>
                   </div>
 
@@ -500,35 +534,48 @@ const AddChemical = () => {
                         Chemical code
                       </InputLabel>
 
-                      <input
-                        id="chemicalCode"
-                        name="chemicalCode"
-                        type="text"
-                        value={formData.chemicalCode}
-                        onChange={handleChange}
-                        placeholder="e.g. HCL-001"
-                        autoComplete="off"
-                        className={`
-                          w-full
-                          rounded-[var(--radius-md)]
-                          border
-                          bg-[var(--color-surface)]
-                          px-4 py-3
-                          text-sm font-medium
-                          text-[var(--color-text-primary)]
-                          placeholder:text-[var(--color-text-muted)]
-                          color-transition
-                          ${
-                            errors.chemicalCode
-                              ? 'border-[var(--color-danger)]'
-                              : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'
+                      <div className="relative">
+                        {isCodeLoading && (
+                          <Loader2
+                            size={18}
+                            className="
+                              absolute right-3 top-1/2
+                              -translate-y-1/2
+                              animate-spin
+                              text-[var(--color-text-muted)]
+                            "
+                          />
+                        )}
+                        <input
+                          id="chemicalCode"
+                          name="chemicalCode"
+                          type="text"
+                          value={formData.chemicalCode}
+                          readOnly
+                          placeholder={
+                            isCodeLoading ? "Generating code..." : "CHE-000000"
                           }
-                        `}
-                      />
+                          autoComplete="off"
+                          className={`
+                            w-full
+                            rounded-[var(--radius-md)]
+                            border
+                            bg-[var(--color-surface-muted)]
+                            px-4 py-3
+                            text-sm font-medium
+                            text-[var(--color-text-secondary)]
+                            placeholder:text-[var(--color-text-muted)]
+                            cursor-not-allowed
+                            ${
+                              errors.chemicalCode
+                                ? "border-[var(--color-danger)]"
+                                : "border-[var(--color-border)]"
+                            }
+                          `}
+                        />
+                      </div>
 
-                      <ErrorMessage
-                        message={errors.chemicalCode}
-                      />
+                      <ErrorMessage message={errors.chemicalCode} />
                     </div>
 
                     <div>
@@ -560,15 +607,13 @@ const AddChemical = () => {
                           color-transition
                           ${
                             errors.canonicalName
-                              ? 'border-[var(--color-danger)]'
-                              : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'
+                              ? "border-[var(--color-danger)]"
+                              : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
                           }
                         `}
                       />
 
-                      <ErrorMessage
-                        message={errors.canonicalName}
-                      />
+                      <ErrorMessage message={errors.canonicalName} />
                     </div>
 
                     <div>
@@ -659,16 +704,11 @@ const AddChemical = () => {
                             focus:border-[var(--color-primary)]
                           "
                         >
-                          {PHYSICAL_STATE_OPTIONS.map(
-                            (option) => (
-                              <option
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </option>
-                            )
-                          )}
+                          {PHYSICAL_STATE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
 
                         <ChevronDown
@@ -684,44 +724,35 @@ const AddChemical = () => {
                     </div>
 
                     <div className="md:col-span-2">
-                      <InputLabel
-                        description="Alternative names used when searching for this chemical."
-                      >
+                      <InputLabel description="Alternative names used when searching for this chemical.">
                         Synonyms
                       </InputLabel>
 
                       <div className="space-y-3">
-                        {formData.synonyms.map(
-                          (synonym, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2"
-                            >
-                              <div className="relative flex-1">
-                                <Tag
-                                  size={17}
-                                  className="
+                        {formData.synonyms.map((synonym, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <Tag
+                                size={17}
+                                className="
                                     absolute left-3 top-1/2
                                     -translate-y-1/2
                                     text-[var(--color-text-muted)]
                                   "
-                                />
+                              />
 
-                                <input
-                                  type="text"
-                                  value={synonym}
-                                  onChange={(event) =>
-                                    handleSynonymChange(
-                                      index,
-                                      event.target.value
-                                    )
-                                  }
-                                  placeholder={
-                                    index === 0
-                                      ? 'e.g. Muriatic acid'
-                                      : 'Enter another synonym'
-                                  }
-                                  className="
+                              <input
+                                type="text"
+                                value={synonym}
+                                onChange={(event) =>
+                                  handleSynonymChange(index, event.target.value)
+                                }
+                                placeholder={
+                                  index === 0
+                                    ? "e.g. Muriatic acid"
+                                    : "Enter another synonym"
+                                }
+                                className="
                                     w-full
                                     rounded-[var(--radius-md)]
                                     border border-[var(--color-border)]
@@ -733,18 +764,14 @@ const AddChemical = () => {
                                     color-transition
                                     focus:border-[var(--color-primary)]
                                   "
-                                />
-                              </div>
+                              />
+                            </div>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeSynonym(index)
-                                }
-                                aria-label={`Remove synonym ${
-                                  index + 1
-                                }`}
-                                className="
+                            <button
+                              type="button"
+                              onClick={() => removeSynonym(index)}
+                              aria-label={`Remove synonym ${index + 1}`}
+                              className="
                                   flex h-11 w-11 shrink-0
                                   items-center justify-center
                                   rounded-[var(--radius-md)]
@@ -755,12 +782,11 @@ const AddChemical = () => {
                                   hover:border-[var(--color-danger)]
                                   hover:bg-[var(--color-surface-muted)]
                                 "
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          )
-                        )}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        ))}
 
                         <button
                           type="button"
@@ -808,9 +834,7 @@ const AddChemical = () => {
                           id="stockDimension"
                           name="stockDimension"
                           value={formData.stockDimension}
-                          onChange={
-                            handleStockDimensionChange
-                          }
+                          onChange={handleStockDimensionChange}
                           className={`
                             w-full appearance-none
                             rounded-[var(--radius-md)]
@@ -822,21 +846,16 @@ const AddChemical = () => {
                             color-transition
                             ${
                               errors.stockDimension
-                                ? 'border-[var(--color-danger)]'
-                                : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'
+                                ? "border-[var(--color-danger)]"
+                                : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
                             }
                           `}
                         >
-                          {STOCK_DIMENSION_OPTIONS.map(
-                            (option) => (
-                              <option
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </option>
-                            )
-                          )}
+                          {STOCK_DIMENSION_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
 
                         <ChevronDown
@@ -850,9 +869,7 @@ const AddChemical = () => {
                         />
                       </div>
 
-                      <ErrorMessage
-                        message={errors.stockDimension}
-                      />
+                      <ErrorMessage message={errors.stockDimension} />
                     </div>
 
                     <div>
@@ -881,8 +898,8 @@ const AddChemical = () => {
                             color-transition
                             ${
                               errors.baseUnit
-                                ? 'border-[var(--color-danger)]'
-                                : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'
+                                ? "border-[var(--color-danger)]"
+                                : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
                             }
                           `}
                         >
@@ -904,9 +921,7 @@ const AddChemical = () => {
                         />
                       </div>
 
-                      <ErrorMessage
-                        message={errors.baseUnit}
-                      />
+                      <ErrorMessage message={errors.baseUnit} />
                     </div>
 
                     <div>
@@ -938,15 +953,13 @@ const AddChemical = () => {
                           color-transition
                           ${
                             errors.densityValue
-                              ? 'border-[var(--color-danger)]'
-                              : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'
+                              ? "border-[var(--color-danger)]"
+                              : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
                           }
                         `}
                       />
 
-                      <ErrorMessage
-                        message={errors.densityValue}
-                      />
+                      <ErrorMessage message={errors.densityValue} />
                     </div>
 
                     <div>
@@ -974,8 +987,8 @@ const AddChemical = () => {
                             color-transition
                             ${
                               errors.densityUnit
-                                ? 'border-[var(--color-danger)]'
-                                : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'
+                                ? "border-[var(--color-danger)]"
+                                : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
                             }
                           `}
                         >
@@ -997,9 +1010,7 @@ const AddChemical = () => {
                         />
                       </div>
 
-                      <ErrorMessage
-                        message={errors.densityUnit}
-                      />
+                      <ErrorMessage message={errors.densityUnit} />
                     </div>
                   </div>
                 </section>
@@ -1048,11 +1059,78 @@ const AddChemical = () => {
                       />
 
                       <p className="text-xs leading-5 text-[var(--color-text-secondary)]">
-                        Detailed GHS hazards and SDS documents
-                        should be managed separately after the
-                        chemical record is created.
+                        Detailed GHS hazards and SDS documents should be managed
+                        separately after the chemical record is created.
                       </p>
                     </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <InputLabel
+                      htmlFor="sdsFile"
+                      description="Upload the Safety Data Sheet (PDF or Word, max 10MB)."
+                    >
+                      SDS document
+                    </InputLabel>
+
+                    {sdsFile ? (
+                      <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3">
+                        <Paperclip
+                          size={20}
+                          className="shrink-0 text-[var(--color-primary)]"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                            {sdsFile.name}
+                          </p>
+                          <p className="text-xs text-[var(--color-text-muted)]">
+                            {(sdsFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSdsFile(null)}
+                          aria-label="Remove selected file"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--color-danger)] color-transition hover:bg-[var(--color-danger)]/10"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="sdsFile"
+                        className={`
+                          relative flex cursor-pointer flex-col
+                          items-center justify-center
+                          gap-2 rounded-[var(--radius-md)]
+                          border-2 border-dashed
+                          p-6 text-center
+                          color-transition
+                          ${
+                            errors.sdsFile
+                              ? "border-[var(--color-danger)] text-[var(--color-danger)]"
+                              : "border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-tint)] hover:text-[var(--color-primary)]"
+                          }
+                        `}
+                      >
+                        <UploadCloud size={32} />
+                        <span className="text-sm font-semibold">
+                          Click to upload or drag and drop
+                        </span>
+                        <span className="text-xs">
+                          PDF or DOCX (max. 10MB)
+                        </span>
+                        <input
+                          id="sdsFile"
+                          name="sdsFile"
+                          type="file"
+                          onChange={handleFileChange}
+                          className="sr-only"
+                          accept=".pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        />
+                      </label>
+                    )}
+                    <ErrorMessage message={errors.sdsFile} />
                   </div>
                 </section>
               </div>
@@ -1078,18 +1156,15 @@ const AddChemical = () => {
 
                   <div className="rounded-[var(--radius-md)] bg-[var(--color-primary-dark)] p-4">
                     <span className="inline-flex rounded-full bg-[var(--color-accent)] px-2.5 py-1 text-xs font-bold text-[var(--color-primary-dark)]">
-                      {formData.chemicalCode.trim() ||
-                        'NO CODE'}
+                      {formData.chemicalCode.trim() || "NO CODE"}
                     </span>
 
                     <h3 className="mt-4 text-lg font-bold text-[var(--color-text-inverse)]">
-                      {formData.canonicalName.trim() ||
-                        'Unnamed chemical'}
+                      {formData.canonicalName.trim() || "Unnamed chemical"}
                     </h3>
 
                     <p className="mt-2 text-sm text-[var(--color-text-inverse)] opacity-75">
-                      {formData.formula.trim() ||
-                        'Formula not entered'}
+                      {formData.formula.trim() || "Formula not entered"}
                     </p>
                   </div>
 
@@ -1110,7 +1185,7 @@ const AddChemical = () => {
                       </dt>
 
                       <dd className="text-sm font-bold text-[var(--color-text-primary)]">
-                        {formData.baseUnit || '—'}
+                        {formData.baseUnit || "—"}
                       </dd>
                     </div>
 
@@ -1120,7 +1195,7 @@ const AddChemical = () => {
                       </dt>
 
                       <dd className="text-sm font-bold text-[var(--color-text-primary)]">
-                        {formData.physicalState || '—'}
+                        {formData.physicalState || "—"}
                       </dd>
                     </div>
 
@@ -1131,9 +1206,8 @@ const AddChemical = () => {
 
                       <dd className="text-sm font-bold text-[var(--color-text-primary)]">
                         {
-                          formData.synonyms.filter(
-                            (synonym) => synonym.trim()
-                          ).length
+                          formData.synonyms.filter((synonym) => synonym.trim())
+                            .length
                         }
                       </dd>
                     </div>
@@ -1153,9 +1227,8 @@ const AddChemical = () => {
                       </h3>
 
                       <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
-                        Supplier, batch number, expiry date,
-                        storage location and current quantity
-                        should not be saved in this form.
+                        Supplier, batch number, expiry date, storage location
+                        and current quantity should not be saved in this form.
                       </p>
                     </div>
                   </div>
@@ -1172,13 +1245,13 @@ const AddChemical = () => {
                   rounded-[var(--radius-md)]
                   border p-4
                   ${
-                    submitMessage.type === 'success'
-                      ? 'border-[var(--color-success)] bg-[var(--color-primary-tint)]'
-                      : 'border-[var(--color-danger)] bg-[var(--color-surface)]'
+                    submitMessage.type === "success"
+                      ? "border-[var(--color-success)] bg-[var(--color-primary-tint)]"
+                      : "border-[var(--color-danger)] bg-[var(--color-surface)]"
                   }
                 `}
               >
-                {submitMessage.type === 'success' ? (
+                {submitMessage.type === "success" ? (
                   <CheckCircle2
                     size={20}
                     className="mt-0.5 shrink-0 text-[var(--color-success)]"
@@ -1194,9 +1267,9 @@ const AddChemical = () => {
                   className={`
                     text-sm font-semibold
                     ${
-                      submitMessage.type === 'success'
-                        ? 'text-[var(--color-success)]'
-                        : 'text-[var(--color-danger)]'
+                      submitMessage.type === "success"
+                        ? "text-[var(--color-success)]"
+                        : "text-[var(--color-danger)]"
                     }
                   `}
                 >
@@ -1278,10 +1351,7 @@ const AddChemical = () => {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2
-                        size={18}
-                        className="animate-spin"
-                      />
+                      <Loader2 size={18} className="animate-spin" />
                       Saving chemical...
                     </>
                   ) : (

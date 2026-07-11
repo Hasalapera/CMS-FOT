@@ -61,6 +61,11 @@ const MAIN_MENU_ITEMS = [
         path: "/chemicals/add-chemical",
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
+      {
+        label: "Deactivated Chemicals",
+        path: "/chemicals/deactivated",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
     ],
   },
   {
