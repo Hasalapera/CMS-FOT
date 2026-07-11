@@ -1,6 +1,6 @@
-import { DataTypes } from "sequelize";
+const { DataTypes } = require("sequelize");
 
-export default function LocationModel(sequelize) {
+module.exports = function LocationModel(sequelize) {
   const Location = sequelize.define(
     "Location",
     {

@@ -1,36 +1,31 @@
-import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
+const { Sequelize } = require('sequelize');
 
-dotenv.config();
+// dotenv is configured in server.js, which is the application's entry point.
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Ensure the DATABASE_URL is set in your .env file
 if (!process.env.DATABASE_URL) {
-  throw new Error('FATAL ERROR: DATABASE_URL environment variable is not set.');
+  throw new Error(`FATAL ERROR: DATABASE_URL environment variable is not set. Please check your .env.${process.env.NODE_ENV || 'development'} file.`);
 }
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   protocol: 'postgres',
-  // Professional Optimization: Connection Pooling
   pool: {
-    max: isProduction ? 15 : 5, // More connections for production
+    max: isProduction ? 15 : 5,
     min: 0,
-    acquire: 30000, // Max time (ms) to wait for a connection
-    idle: 10000, // Max time (ms) a connection can be idle before being released
+    acquire: 30000,
+    idle: 10000,
   },
   dialectOptions: {
-    // SSL is often required for remote/production databases
     ssl: isProduction
       ? {
           require: true,
-          rejectUnauthorized: false, // Adjust this based on your DB provider's requirements
+          rejectUnauthorized: false,
         }
       : false,
   },
-  // Show SQL logs only when not in production
   logging: isProduction ? false : console.log,
 });
 
-export default sequelize;
+module.exports = sequelize;

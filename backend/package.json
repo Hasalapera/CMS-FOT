@@ -1,9 +1,9 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type":"commonjs",
   "description": "Backend API for Faculty Laboratory Chemical Management System",
   "main": "src/server.js",
-  "type": "commonjs",
   "scripts": {
     "dev": "cross-env NODE_ENV=development node --watch --watch-preserve-output src/server.js",
     "start": "cross-env NODE_ENV=production node src/server.js",

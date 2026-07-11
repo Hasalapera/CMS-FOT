@@ -1,6 +1,6 @@
-import { DataTypes } from "sequelize";
+const { DataTypes } = require("sequelize");
 
-export default function BatchModel(sequelize) {
+module.exports = function BatchModel(sequelize) {
   const Batch = sequelize.define(
     "Batch",
     {
