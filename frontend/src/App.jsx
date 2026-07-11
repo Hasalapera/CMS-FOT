@@ -7,6 +7,9 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/Common/ProtectedRoute";
 import DashboardLayout from "./components/Layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
+import ViewChemicals from "./pages/chemicals/ViewChemicals";
+import ChemicalDetails from "./pages/chemicals/ChemicalDetails";
+import ViewDeactivatedChemicals from "./pages/chemicals/ViewDeactivatedChemicals";
 import AddUsers from "./components/AddUsers";
 import PasswordReset from "./components/PasswordReset";
 
@@ -25,7 +28,9 @@ function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chemicals/add-chemical" element={<AddChemical />} />
-          {/* Add other dashboard routes like '/chemicals/list' here when you create them */}
+          <Route path="/chemicals/list" element={<ViewChemicals />} />
+          <Route path="/chemicals/:id" element={<ChemicalDetails />} />
+          <Route path="/chemicals/deactivated" element={<ViewDeactivatedChemicals />} />
         </Route>
 
         {/* Component testing routes */}
