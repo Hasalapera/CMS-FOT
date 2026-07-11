@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   ChevronDown,
 } from "lucide-react";
-import api from "../api/axiosInstance";
+import api from "../../api/axiosInstance";
 
 const AddUsers = () => {
   const [showPassword, setShowPassword] = useState(false);
