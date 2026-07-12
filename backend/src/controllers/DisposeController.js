@@ -138,8 +138,17 @@ const getformdata = async (req, res) => {
 const getbatchbychemicalid = async (req, res) => {
   try {
     const { chemicalId } = req.params;
+
+    const chemical = await Chemical.findOne({
+      where: { chemicalCode: chemicalId },
+    });
+
+    if (!chemical) {
+      return res.status(404).json({ message: "Chemical not found" });
+    }
+
     const batches = await Batch.findAll({
-      where: { chemicalId },
+      where: { chemicalId: chemical.id },
       attributes: ["batchNumber"],
       order: [["batchNumber", "ASC"]],
     });

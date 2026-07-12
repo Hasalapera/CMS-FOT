@@ -12,13 +12,15 @@ import ChemicalDetails from "./pages/chemicals/ChemicalDetails";
 import AddUsers from "./pages/admin/AddUsers";
 import ViewUsers from "./pages/admin/ViewUsers";
 import PasswordReset from "./components/PasswordReset";
-import ViewDeactivatedChemicals from "./pages/chemicals/ViewDeactivatedChemicals"; 
+import ViewDeactivatedChemicals from "./pages/chemicals/ViewDeactivatedChemicals";
 import AddNewBatch from "./pages/batches/AddNewBatch";
 import AddLocation from "./pages/locations/AddLocation";
 import ViewLocations from "./pages/locations/ViewLocations";
 import LocationDetails from "./pages/locations/LocationDetails";
 import ViewAllBatches from "./pages/batches/ViewAllBatches";
 import ViewBatchDetail from "./pages/batches/ViewBatchDetail";
+import DisposalReq from "./pages/chemicals/DisplosaReq";
+import ReturnedPage from "./pages/chemicals/ReturnedPage";
 
 function App() {
   return (
@@ -38,7 +40,10 @@ function App() {
           <Route path="/chemicals/add-chemical" element={<AddChemical />} />
           <Route path="/chemicals/list" element={<ViewChemicals />} />
           <Route path="/chemicals/:id" element={<ChemicalDetails />} />
-          <Route path="/chemicals/deactivated" element={<ViewDeactivatedChemicals />} />
+          <Route
+            path="/chemicals/deactivated"
+            element={<ViewDeactivatedChemicals />}
+          />
           <Route path="/admin/users/add" element={<AddUsers />} />
           <Route path="/admin/users/view" element={<ViewUsers />} />
           <Route path="/stock/add" element={<AddNewBatch />} />
@@ -47,6 +52,8 @@ function App() {
           <Route path="/locations/:id" element={<LocationDetails />} />
           <Route path="/stock/batches" element={<ViewAllBatches />} />
           <Route path="/stock/batches/:id" element={<ViewBatchDetail />} />
+          <Route path="/disposal/request" element={<DisposalReq />} />
+          <Route path="/disposal/return" element={<ReturnedPage />} />
         </Route>
       </Routes>
     </AuthProvider>

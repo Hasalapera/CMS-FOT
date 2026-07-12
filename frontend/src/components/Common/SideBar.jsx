@@ -19,6 +19,7 @@ import {
   ChevronRight,
   LogOut,
   ShieldCheck,
+  Recycle,
 } from "lucide-react";
 
 const ROLE_LABELS = {
@@ -63,6 +64,24 @@ const MAIN_MENU_ITEMS = [
     path: "/usage",
     icon: Activity,
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
+  },
+  {
+    label: "Disposals",
+    icon: Recycle,
+    pathPrefix: "/disposals",
+    roles: ["ADMIN", "TECHNICAL_OFFICER"],
+    children: [
+      {
+        label: "Chemical Requests",
+        path: "/disposal/request",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+      {
+        label: "Return and Disposal",
+        path: "/disposal/return",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+    ],
   },
   {
     label: "Locations",

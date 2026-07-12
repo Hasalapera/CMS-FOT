@@ -1,8 +1,8 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes } = require("sequelize");
 
 module.exports = function ChemicalModel(sequelize) {
   const Chemical = sequelize.define(
-    'Chemical',
+    "Chemical",
     {
       id: {
         type: DataTypes.UUID,
@@ -13,37 +13,37 @@ module.exports = function ChemicalModel(sequelize) {
         type: DataTypes.STRING(50),
         allowNull: false,
         unique: true,
-        field: 'chemical_code',
+        field: "chemical_code",
       },
       canonicalName: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        field: 'canonical_name',
+        field: "canonical_name",
       },
       stockDimension: {
-        type: DataTypes.ENUM('MASS', 'VOLUME', 'COUNT'),
+        type: DataTypes.ENUM("MASS", "VOLUME", "COUNT"),
         allowNull: false,
-        field: 'stock_dimension',
+        field: "stock_dimension",
       },
       baseUnit: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        field: 'base_unit',
+        field: "base_unit",
       },
       casNumber: {
         type: DataTypes.STRING(50),
         allowNull: true,
-        field: 'cas_number',
+        field: "cas_number",
       },
       formula: {
         type: DataTypes.STRING(255),
         allowNull: true,
-        field: 'formula',
+        field: "formula",
       },
       physicalState: {
-        type: DataTypes.ENUM('SOLID', 'LIQUID', 'GAS', 'OTHER'),
+        type: DataTypes.ENUM("SOLID", "LIQUID", "GAS", "OTHER"),
         allowNull: true,
-        field: 'physical_state',
+        field: "physical_state",
       },
       synonyms: {
         type: DataTypes.JSONB,
@@ -52,72 +52,72 @@ module.exports = function ChemicalModel(sequelize) {
       densityValue: {
         type: DataTypes.DECIMAL(10, 4),
         allowNull: true,
-        field: 'density_value',
+        field: "density_value",
       },
       densityUnit: {
         type: DataTypes.STRING(20),
         allowNull: true,
-        field: 'density_unit',
+        field: "density_unit",
       },
       safetySummary: {
         type: DataTypes.TEXT,
         allowNull: true,
-        field: 'safety_summary',
+        field: "safety_summary",
       },
       isActive: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-        field: 'is_active',
+        field: "is_active",
       },
       // --- SDS Fields ---
       sdsStorageKey: {
         type: DataTypes.STRING(512),
         allowNull: true,
-        field: 'sds_storage_key',
+        field: "sds_storage_key",
       },
       sdsOriginalFilename: {
         type: DataTypes.STRING(255),
         allowNull: true,
-        field: 'sds_original_filename',
+        field: "sds_original_filename",
       },
       sdsMimeType: {
         type: DataTypes.STRING(100),
         allowNull: true,
-        field: 'sds_mime_type',
+        field: "sds_mime_type",
       },
       sdsFileSize: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        field: 'sds_file_size',
+        field: "sds_file_size",
       },
       sdsChecksum: {
         type: DataTypes.STRING(64),
         allowNull: true,
-        field: 'sds_checksum',
+        field: "sds_checksum",
       },
       sdsRevisionDate: {
         type: DataTypes.DATEONLY,
         allowNull: true,
-        field: 'sds_revision_date',
+        field: "sds_revision_date",
       },
       sdsUploadedAt: {
         type: DataTypes.DATE,
         allowNull: true,
-        field: 'sds_uploaded_at',
+        field: "sds_uploaded_at",
       },
       sdsUploadedById: {
         type: DataTypes.UUID,
         allowNull: true,
-        field: 'sds_uploaded_by_id',
+        field: "sds_uploaded_by_id",
       },
     },
     {
-      tableName: 'chemicals',
+      tableName: "chemicals",
       timestamps: true,
       underscored: true,
-    }
+    },
   );
 
   return Chemical;
-}
+};
