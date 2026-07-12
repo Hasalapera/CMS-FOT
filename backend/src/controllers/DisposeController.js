@@ -71,8 +71,13 @@ const updateqty = async (req, res) => {
     dispose.dateReturned = dateReturned;
     dispose.returnedStatus = "RETURNED";
     await dispose.save();
+    if (Number(quantityUsed) > Number(batch.currentQuantity)) {
+      return res.status(400).json({
+        message: "Quantity used exceeds the current stock quantity",
+      });
+    }
     batch.currentQuantity =
-      Number(batch.currentQuantity) + Number(quantityUsed);
+      Number(batch.currentQuantity) - Number(quantityUsed);
 
     await batch.save();
 
