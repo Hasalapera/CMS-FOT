@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   Beaker,
-  CheckCircle2,
   ChevronDown,
   FlaskConical,
   Info,
@@ -22,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 
 // Import the configured Axios instance
 import api from "../../api/axiosInstance";
+
 
 const INITIAL_FORM = {
   chemicalCode: "",
@@ -125,6 +125,29 @@ const ErrorMessage = ({ message }) => {
   );
 };
 
+const CAS_NUMBER_REGEX = /^\d{2,7}-\d{2}-\d$/;
+
+const isValidCasNumber = (casNumber) => {
+  if (!CAS_NUMBER_REGEX.test(casNumber)) {
+    return false;
+  }
+
+  const digits = casNumber.replace(/-/g, "");
+  const checkDigit = Number(digits.at(-1));
+
+  const sum = digits
+    .slice(0, -1)
+    .split("")
+    .reverse()
+    .reduce(
+      (total, digit, index) =>
+        total + Number(digit) * (index + 1),
+      0,
+    );
+
+  return sum % 10 === checkDigit;
+};
+
 const AddChemical = () => {
   const navigate = useNavigate();
 
@@ -134,6 +157,9 @@ const AddChemical = () => {
   const [submitMessage, setSubmitMessage] = useState(null);
   const [isCodeLoading, setIsCodeLoading] = useState(true);
   const [sdsFile, setSdsFile] = useState(null);
+
+  const [isCasLoading, setIsCasLoading] = useState(false);
+  const [casLookupMessage, setCasLookupMessage] = useState(null);
 
   useEffect(() => {
     const fetchNextCode = async () => {
@@ -164,6 +190,98 @@ const AddChemical = () => {
 
     fetchNextCode();
   }, []);
+
+  const lookupChemicalByCas = async () => {
+    const casNumber = formData.casNumber.trim();
+
+    setCasLookupMessage(null);
+
+    if (!casNumber) {
+      return;
+    }
+
+    if (!isValidCasNumber(casNumber)) {
+      setErrors((previous) => ({
+        ...previous,
+        casNumber: "Enter a valid CAS number, for example 7647-01-0.",
+      }));
+
+      return;
+    }
+
+    try {
+      setIsCasLoading(true);
+
+      setErrors((previous) => ({
+        ...previous,
+        casNumber: "",
+      }));
+
+      const response = await api.get(
+        `/chemicals/lookup/cas/${encodeURIComponent(casNumber)}`,
+      );
+
+      if (!response.data?.success) {
+        throw new Error(
+          response.data?.message || "Chemical information was not found.",
+        );
+      }
+
+      const chemicalData = response.data.chemical;
+
+      setFormData((previous) => ({
+        ...previous,
+
+        // Keep existing user-entered values when API does not return a value.
+        canonicalName:
+          chemicalData.canonicalName || previous.canonicalName,
+
+        formula:
+          chemicalData.formula || previous.formula,
+
+        densityValue:
+          chemicalData.densityValue !== null &&
+          chemicalData.densityValue !== undefined
+            ? String(chemicalData.densityValue)
+            : previous.densityValue,
+
+        densityUnit:
+          chemicalData.densityUnit || previous.densityUnit,
+      }));
+
+      if (
+        chemicalData.densityValue !== null &&
+        chemicalData.densityValue !== undefined
+      ) {
+        setErrors((previous) => ({
+          ...previous,
+          densityValue: "",
+          densityUnit: "",
+        }));
+
+        setCasLookupMessage({
+          type: "success",
+          text: `Chemical information and density loaded from ${chemicalData.source}.`,
+        });
+      } else {
+        setCasLookupMessage({
+          type: "warning",
+          text:
+            "Chemical information was found, but PubChem did not provide a usable density value. Please enter it manually from the SDS.",
+        });
+      }
+    } catch (error) {
+      setCasLookupMessage({
+        type: "error",
+        text:
+          error.response?.data?.message ||
+          error.message ||
+          "Unable to retrieve chemical information.",
+      });
+    } finally {
+      setIsCasLoading(false);
+    }
+  };
 
   const availableBaseUnits = useMemo(
     () =>
@@ -617,35 +735,117 @@ const AddChemical = () => {
                     </div>
 
                     <div>
-                      <InputLabel
-                        htmlFor="casNumber"
-                        description="International Chemical Abstracts Service identifier."
-                      >
-                        CAS number
-                      </InputLabel>
+                    <InputLabel
+                      htmlFor="casNumber"
+                      description="Enter a valid CAS number to automatically retrieve chemical information."
+                    >
+                      CAS number
+                    </InputLabel>
 
-                      <input
-                        id="casNumber"
-                        name="casNumber"
-                        type="text"
-                        value={formData.casNumber}
-                        onChange={handleChange}
-                        placeholder="e.g. 7647-01-0"
-                        autoComplete="off"
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <div className="relative flex-1">
+                        <input
+                          id="casNumber"
+                          name="casNumber"
+                          type="text"
+                          value={formData.casNumber}
+                          onChange={(event) => {
+                            handleChange(event);
+                            setCasLookupMessage(null);
+                          }}
+                          onBlur={() => {
+                            if (formData.casNumber.trim()) {
+                              lookupChemicalByCas();
+                            }
+                          }}
+                          placeholder="e.g. 7647-01-0"
+                          autoComplete="off"
+                          disabled={isCasLoading}
+                          className={`
+                            w-full
+                            rounded-[var(--radius-md)]
+                            border
+                            bg-[var(--color-surface)]
+                            px-4 py-3
+                            pr-11
+                            text-sm font-medium
+                            text-[var(--color-text-primary)]
+                            placeholder:text-[var(--color-text-muted)]
+                            color-transition
+                            disabled:cursor-wait
+                            disabled:opacity-70
+                            ${
+                              errors.casNumber
+                                ? "border-[var(--color-danger)]"
+                                : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
+                            }
+                          `}
+                        />
+
+                        {isCasLoading && (
+                          <Loader2
+                            size={18}
+                            className="
+                              absolute right-3 top-1/2
+                              -translate-y-1/2
+                              animate-spin
+                              text-[var(--color-primary)]
+                            "
+                          />
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={lookupChemicalByCas}
+                        disabled={isCasLoading || !formData.casNumber.trim()}
                         className="
-                          w-full
+                          inline-flex items-center justify-center gap-2
                           rounded-[var(--radius-md)]
-                          border border-[var(--color-border)]
-                          bg-[var(--color-surface)]
+                          bg-[var(--color-primary)]
                           px-4 py-3
-                          text-sm font-medium
-                          text-[var(--color-text-primary)]
-                          placeholder:text-[var(--color-text-muted)]
+                          text-sm font-bold
+                          text-[var(--color-text-inverse)]
                           color-transition
-                          focus:border-[var(--color-primary)]
+                          hover:bg-[var(--color-primary-light)]
+                          disabled:cursor-not-allowed
+                          disabled:opacity-60
                         "
-                      />
+                      >
+                        {isCasLoading ? (
+                          <>
+                            <Loader2 size={17} className="animate-spin" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <Beaker size={17} />
+                            Find chemical
+                          </>
+                        )}
+                      </button>
                     </div>
+
+                    <ErrorMessage message={errors.casNumber} />
+
+                    {casLookupMessage && (
+                      <div
+                        className={`
+                          mt-2 rounded-[var(--radius-sm)] border px-3 py-2
+                          text-xs font-medium
+                          ${
+                            casLookupMessage.type === "success"
+                              ? "border-[var(--color-success)] text-[var(--color-success)]"
+                              : casLookupMessage.type === "warning"
+                                ? "border-[var(--color-warning)] text-[var(--color-warning)]"
+                                : "border-[var(--color-danger)] text-[var(--color-danger)]"
+                          }
+                        `}
+                      >
+                        {casLookupMessage.text}
+                      </div>
+                    )}
+                  </div>
 
                     <div>
                       <InputLabel

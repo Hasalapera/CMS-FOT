@@ -12,7 +12,7 @@ import {
   ArrowLeft,
   IdCard,
 } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
@@ -23,11 +23,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuth();
-
-  // Redirect to the page the user came from, or to a default authed page
-  const from = location.state?.from?.pathname || "/chemicals/add-chemical";
 
   const features = [
     { icon: Landmark, label: "Hierarchical location structure" },
@@ -49,7 +45,7 @@ const Login = () => {
 
     try {
       await login(institutionalId, password);
-      navigate(from, { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       if (err.response?.status === 403) {
         setError("User account is deleted");
