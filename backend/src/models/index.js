@@ -52,23 +52,18 @@ Location.belongsTo(Location, {
   as: "parent",
   foreignKey: "parentLocationId",
 });
+
+// 5. dispose <-> chemical
+
 Dispose.belongsTo(Chemical, {
-  foreignKey: "chemicalId",
+  foreignKey: "chemicalCode",
+  targetKey: "chemicalCode",
   as: "chemical",
 });
 
 Chemical.hasMany(Dispose, {
-  foreignKey: "chemicalId",
-  as: "disposals",
-});
-
-Dispose.belongsTo(User, {
-  foreignKey: "userId",
-  as: "user",
-});
-
-User.hasMany(Dispose, {
-  foreignKey: "userId",
+  foreignKey: "chemicalCode",
+  sourceKey: "chemicalCode",
   as: "disposals",
 });
 

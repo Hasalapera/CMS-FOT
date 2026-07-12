@@ -15,26 +15,15 @@ module.exports = {
         allowNull: false,
       },
 
-      chemical_id: {
-        type: Sequelize.UUID,
-
-        allowNull: false,
-
-        references: {
-          model: "chemicals",
-
-          key: "id",
-        },
-
-        onUpdate: "CASCADE",
-
-        onDelete: "CASCADE",
-      },
-
       chemical_code: {
         type: Sequelize.STRING(50),
-
         allowNull: false,
+        references: {
+          model: "chemicals",
+          key: "chemical_code",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "RESTRICT",
       },
 
       chemical_name: {
@@ -74,19 +63,8 @@ module.exports = {
       },
 
       user_id: {
-        type: Sequelize.UUID,
-
+        type: Sequelize.STRING(50),
         allowNull: false,
-
-        references: {
-          model: "users",
-
-          key: "id",
-        },
-
-        onUpdate: "CASCADE",
-
-        onDelete: "CASCADE",
       },
 
       user_name: {

@@ -10,12 +10,6 @@ module.exports = function DisposeModel(sequelize) {
         defaultValue: DataTypes.UUIDV4,
       },
 
-      chemicalId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        field: "chemical_id",
-      },
-
       chemicalCode: {
         type: DataTypes.STRING(50),
         allowNull: false,
@@ -58,7 +52,7 @@ module.exports = function DisposeModel(sequelize) {
       },
 
       userId: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING(50),
         allowNull: false,
         field: "user_id",
       },
