@@ -1,56 +1,76 @@
-'use strict';
+"use strict";
 
-const sequelize = require('../database/db.js');
-const { DataTypes } = require('sequelize');
+const sequelize = require("../database/db.js");
+const { DataTypes } = require("sequelize");
 
 // --- Model Imports & Initialization ---
-const User = require('./User')(sequelize, DataTypes);
-const Chemical = require('./Chemical')(sequelize, DataTypes);
-const Batch = require('./Batch')(sequelize, DataTypes);
-const Location = require('./Location')(sequelize, DataTypes);
+const User = require("./User")(sequelize, DataTypes);
+const Chemical = require("./Chemical")(sequelize, DataTypes);
+const Batch = require("./Batch")(sequelize, DataTypes);
+const Location = require("./Location")(sequelize, DataTypes);
+const Dispose = require("./Dispose")(sequelize, DataTypes);
 
 // --- Centralized Model Associations ---
 
 // 1. Chemical <-> User (SDS Uploader)
 Chemical.belongsTo(User, {
-  foreignKey: 'sdsUploadedById',
-  as: 'sdsUploader',
+  foreignKey: "sdsUploadedById",
+  as: "sdsUploader",
 });
 User.hasMany(Chemical, {
-  foreignKey: 'sdsUploadedById',
-  as: 'uploadedSdsChemicals',
+  foreignKey: "sdsUploadedById",
+  as: "uploadedSdsChemicals",
 });
 
 // 2. Chemical <-> Batch
 Chemical.hasMany(Batch, {
-  foreignKey: 'chemicalId',
-  as: 'batches',
-  onDelete: 'CASCADE',
+  foreignKey: "chemicalId",
+  as: "batches",
+  onDelete: "CASCADE",
 });
 Batch.belongsTo(Chemical, {
-  foreignKey: 'chemicalId',
-  as: 'chemical',
+  foreignKey: "chemicalId",
+  as: "chemical",
 });
 
 // 3. Batch <-> Location
 Batch.belongsTo(Location, {
-  foreignKey: 'locationId',
-  as: 'location',
+  foreignKey: "locationId",
+  as: "location",
 });
 Location.hasMany(Batch, {
-  foreignKey: 'locationId',
-  as: 'batches',
+  foreignKey: "locationId",
+  as: "batches",
 });
 
 // 4. Location <-> Location (Self-referencing for hierarchy)
 Location.hasMany(Location, {
-  as: 'children',
-  foreignKey: 'parentLocationId',
+  as: "children",
+  foreignKey: "parentLocationId",
 });
 Location.belongsTo(Location, {
-  as: 'parent',
-  foreignKey: 'parentLocationId',
+  as: "parent",
+  foreignKey: "parentLocationId",
+});
+Dispose.belongsTo(Chemical, {
+  foreignKey: "chemicalId",
+  as: "chemical",
+});
+
+Chemical.hasMany(Dispose, {
+  foreignKey: "chemicalId",
+  as: "disposals",
+});
+
+Dispose.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+User.hasMany(Dispose, {
+  foreignKey: "userId",
+  as: "disposals",
 });
 
 // --- Exports ---
-module.exports = { sequelize, User, Chemical, Batch, Location };
+module.exports = { sequelize, User, Chemical, Batch, Location, Dispose };
