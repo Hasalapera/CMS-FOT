@@ -14,6 +14,9 @@ router.get('/get-next-code', verifyToken, ChemicalController.getNextChemicalCode
 // Route to get all inactive (soft-deleted) chemicals
 router.get('/inactive', verifyToken, ChemicalController.getInactiveChemicals);
 
+// Route to look up chemical data from PubChem by CAS number
+router.get('/lookup/cas/:casNumber', verifyToken, ChemicalController.getChemicalDataByCas);
+
 // Route to add a new chemical
 router.post('/add-chemical', [verifyToken, uploadSds], ChemicalController.addChemical);
 
