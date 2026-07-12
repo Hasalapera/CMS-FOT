@@ -22,10 +22,10 @@ module.exports = function DisposeModel(sequelize) {
         field: "chemical_name",
       },
 
-      batchCode: {
+      batchNumber: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        field: "batch_code",
+        field: "batch_number",
       },
 
       quantityUsed: {
