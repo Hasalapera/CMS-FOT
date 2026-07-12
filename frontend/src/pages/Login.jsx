@@ -27,7 +27,7 @@ const Login = () => {
   const { login } = useAuth();
 
   // Redirect to the page the user came from, or to a default authed page
-  const from = location.state?.from?.pathname || "/chemicals/add-chemical";
+  const from = location.state?.from?.pathname || "/dashboard";
 
   const features = [
     { icon: Landmark, label: "Hierarchical location structure" },
