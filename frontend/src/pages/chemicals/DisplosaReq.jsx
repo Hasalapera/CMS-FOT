@@ -350,7 +350,7 @@ const DisplosaReq = () => {
 
       setSubmitMessage({
         type: "success",
-        text: "Release record created successfully! Redirecting shortly.",
+        text: "Release record created successfully!",
       });
     } catch (error) {
       setSubmitMessage({
