@@ -87,7 +87,8 @@ const MAIN_MENU_ITEMS = [
     path: "/sds-library",
     icon: FileText,
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
-
+  },
+  {
     label: "Procurement & Stock",
     icon: Truck,
     pathPrefix: "/stock",
@@ -268,6 +269,7 @@ const CollapsibleSidebarLink = ({ item, closeMobileMenu, userRole }) => {
             <NavLink
               key={child.path}
               to={child.path}
+              end
               onClick={closeMobileMenu}
               className={({ isActive }) =>
                 [

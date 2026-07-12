@@ -1,4 +1,4 @@
-const { Location } = require('../models/index.js');
+const { Location, Batch, Chemical } = require('../models/index.js');
 const { Op } = require('sequelize');
 
 const addLocation = async (req, res) => {
@@ -12,23 +12,27 @@ const addLocation = async (req, res) => {
       });
     }
 
+    // Explicitly handle empty string for parentLocationId to ensure it's treated as NULL in the query
+    const parentId = (parentLocationId && parentLocationId.trim() !== '') ? parentLocationId : null;
+
     const existingLocation = await Location.findOne({
       where: {
-        name: { [Op.iLike]: name.trim() }
+        name: { [Op.iLike]: name.trim() },
+        parentLocationId: parentId,
       }
     });
 
     if (existingLocation) {
       return res.status(409).json({
         success: false,
-        message: `A location with the name "${name}" already exists.`
+        message: `A location named "${name}" already exists at this level.`
       });
     }
 
     const newLocation = await Location.create({
       name: name.trim(),
       type,
-      parentLocationId: parentLocationId || null,
+      parentLocationId: parentId,
     });
 
     res.status(201).json({
@@ -63,7 +67,50 @@ const getAllLocations = async (req, res) => {
   }
 };
 
+const getDescendants = async (locationId) => {
+  const location = await Location.findByPk(locationId, {
+    include: [
+      {
+        model: Batch,
+        as: 'batches',
+        include: [{
+          model: Chemical,
+          as: 'chemical',
+          attributes: ['id', 'canonicalName', 'chemicalCode', 'baseUnit']
+        }]
+      }
+    ],
+    order: [
+      ['name', 'ASC'],
+      [{ model: Batch, as: 'batches' }, 'createdAt', 'DESC']
+    ]
+  });
+
+  if (!location) return null;
+
+  const children = await Location.findAll({ where: { parentLocationId: locationId }, order: [['name', 'ASC']] });
+  const childHierarchies = await Promise.all(children.map(child => getDescendants(child.id)));
+
+  location.dataValues.children = childHierarchies.filter(c => c !== null);
+  return location;
+};
+
+const getLocationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const locationHierarchy = await getDescendants(id);
+    if (!locationHierarchy) {
+      return res.status(404).json({ success: false, message: 'Location not found.' });
+    }
+    res.status(200).json({ success: true, location: locationHierarchy });
+  } catch (error) {
+    console.error(`Error fetching location with ID ${req.params.id}:`, error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching location details.' });
+  }
+};
+
 module.exports = {
   getAllLocations,
   addLocation,
+  getLocationById,
 };

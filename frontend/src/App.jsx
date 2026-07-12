@@ -15,6 +15,10 @@ import PasswordReset from "./components/PasswordReset";
 import ViewDeactivatedChemicals from "./pages/chemicals/ViewDeactivatedChemicals"; 
 import AddNewBatch from "./pages/batches/AddNewBatch";
 import AddLocation from "./pages/locations/AddLocation";
+import ViewLocations from "./pages/locations/ViewLocations";
+import LocationDetails from "./pages/locations/LocationDetails";
+import ViewAllBatches from "./pages/batches/ViewAllBatches";
+import ViewBatchDetail from "./pages/batches/ViewBatchDetail";
 
 function App() {
   return (
@@ -22,6 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<PasswordReset />} />
         <Route
           element={
             <ProtectedRoute>
@@ -36,13 +41,12 @@ function App() {
           <Route path="/chemicals/deactivated" element={<ViewDeactivatedChemicals />} />
           <Route path="/admin/users/add" element={<AddUsers />} />
           <Route path="/admin/users/view" element={<ViewUsers />} />
-        </Route>
-
-        {/* Component testing routes */}
-          <Route path="/reset-password" element={<PasswordReset />} />
-          <Route path="/chemicals/deactivated" element={<ViewDeactivatedChemicals />} /> 
           <Route path="/stock/add" element={<AddNewBatch />} />
           <Route path="/locations/add" element={<AddLocation />} />
+          <Route path="/locations" element={<ViewLocations />} />
+          <Route path="/locations/:id" element={<LocationDetails />} />
+          <Route path="/stock/batches" element={<ViewAllBatches />} />
+          <Route path="/stock/batches/:id" element={<ViewBatchDetail />} />
         </Route>
       </Routes>
     </AuthProvider>
