@@ -5,11 +5,13 @@
   "description": "Backend API for Faculty Laboratory Chemical Management System",
   "main": "src/server.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node --watch --watch-preserve-output src/server.js",
-    "start": "cross-env NODE_ENV=production node src/server.js",
+    "dev": "npm run db:migrate:dev && npm run db:seed:dev && cross-env NODE_ENV=development node --watch --watch-preserve-output src/server.js",
+    "start": "npm run db:migrate:prod && npm run db:seed:prod && cross-env NODE_ENV=production node src/server.js",
     "test": "cross-env NODE_ENV=test vitest run",
     "test:watch": "cross-env NODE_ENV=test vitest",
     "lint": "eslint .",
+    "dev:test": "cross-env NODE_ENV=test node --watch --watch-preserve-output src/server.js",
+    "start:test": "npm run db:migrate:test && npm run db:seed:test && cross-env NODE_ENV=test node src/server.js",
     "db:migration:create": "sequelize-cli migration:generate",
     "db:migrate:dev": "cross-env NODE_ENV=development sequelize-cli db:migrate",
     "db:migrate:status:dev": "cross-env NODE_ENV=development sequelize-cli db:migrate:status",
@@ -54,6 +56,7 @@
     "globals": "^17.7.0",
     "sequelize-cli": "^6.6.5",
     "supertest": "^7.2.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "uuid": "^9.0.1"
   }
 }
