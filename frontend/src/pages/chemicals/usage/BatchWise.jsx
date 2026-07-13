@@ -61,18 +61,18 @@ const SearchableSelect = ({
         className="flex w-full items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3.5 text-left text-sm font-medium color-transition focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Boxes size={18} className="shrink-0 text-[var(--color-text-muted)]" />
-        <span className="min-w-0 flex-1 truncate">
+        <span className="min-w-0 flex-1">
           {loading ? (
             "Loading batches..."
           ) : selectedOption ? (
-            <>
-              <span className="text-[var(--color-text-primary)]">
+            <span className="flex flex-col">
+              <span className="truncate font-bold text-[var(--color-primary)]">
                 {selectedOption.label}
               </span>
-              <span className="ml-2 text-xs text-[var(--color-text-muted)]">
-                Batch {selectedOption.sublabel}
+              <span className="truncate text-xs text-[var(--color-text-muted)]">
+                {selectedOption.sublabel}
               </span>
-            </>
+            </span>
           ) : (
             <span className="text-[var(--color-text-muted)]">
               {placeholder}
@@ -126,13 +126,19 @@ const SearchableSelect = ({
                   }}
                   className={`flex w-full flex-col items-start gap-0.5 px-4 py-2.5 text-left text-sm color-transition hover:bg-[var(--color-primary-tint)] ${
                     option.value === value
-                      ? "bg-[var(--color-primary-tint)] font-semibold text-[var(--color-primary)]"
-                      : "text-[var(--color-text-primary)]"
+                      ? "bg-[var(--color-primary-tint)]"
+                      : ""
                   }`}
                 >
-                  <span className="truncate">{option.label}</span>
+                  <span className={`truncate font-bold ${
+                    option.value === value
+                      ? "text-[var(--color-primary)]"
+                      : "text-[var(--color-text-primary)]"
+                  }`}>
+                    {option.label}
+                  </span>
                   <span className="truncate text-xs text-[var(--color-text-muted)]">
-                    Batch {option.sublabel}
+                    {option.sublabel}
                   </span>
                 </button>
               ))
@@ -223,8 +229,8 @@ const batchwise = () => {
       setBatchOptions(
         batches.map((b) => ({
           value: b.batchNumber,
-          label: b.chemical?.canonicalName || "Unnamed chemical",
-          sublabel: b.batchNumber,
+          label: b.batchNumber,
+          sublabel: b.chemical?.canonicalName || "Unnamed chemical",
         })),
       );
     } catch (error) {
@@ -274,7 +280,7 @@ const batchwise = () => {
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           {/* Page header */}
           <header className="mb-6 overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-primary-dark)] shadow-[var(--shadow-md)]">
             <div className="relative p-5 sm:p-7 lg:p-8">
@@ -421,13 +427,13 @@ const batchwise = () => {
                   <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--color-primary-light)] opacity-20" />
                   <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div className="min-w-0">
-                      <span className="inline-flex rounded-full bg-[var(--color-accent)] px-2.5 py-1 text-xs font-bold text-[var(--color-primary-dark)]">
-                        Batch {usageData.batchNumber}
-                      </span>
-                      <h2 className="mt-3 truncate text-xl font-extrabold text-[var(--color-text-inverse)] sm:text-2xl">
-                        {usageData.chemicalName}
+                      <h2 className="truncate text-2xl font-extrabold text-[var(--color-accent)] sm:text-3xl">
+                        {usageData.batchNumber}
                       </h2>
-                      <p className="mt-1 text-sm text-[var(--color-text-inverse)] opacity-75">
+                      <p className="mt-1 text-sm font-medium text-[var(--color-text-inverse)] opacity-80">
+                        {usageData.chemicalName}
+                      </p>
+                      <p className="mt-0.5 text-xs text-[var(--color-text-inverse)] opacity-50">
                         {usageData.chemicalCode}
                       </p>
                     </div>
