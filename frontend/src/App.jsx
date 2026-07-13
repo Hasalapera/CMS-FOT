@@ -21,6 +21,8 @@ import ViewAllBatches from "./pages/batches/ViewAllBatches";
 import ViewBatchDetail from "./pages/batches/ViewBatchDetail";
 import DisposalReq from "./pages/chemicals/DisplosaReq";
 import ReturnedPage from "./pages/chemicals/ReturnedPage";
+import BatchWiseUsage from "./pages/chemicals/usage/BatchWise";
+import ChemicalWiseUsage from "./pages/chemicals/usage/ChemicalWise";
 
 function App() {
   return (
@@ -54,6 +56,8 @@ function App() {
           <Route path="/stock/batches/:id" element={<ViewBatchDetail />} />
           <Route path="/disposal/request" element={<DisposalReq />} />
           <Route path="/disposal/return" element={<ReturnedPage />} />
+          <Route path="/usage/batchwise" element={<BatchWiseUsage />} />
+          <Route path="/usage/chemicalwise" element={<ChemicalWiseUsage />} />
         </Route>
       </Routes>
     </AuthProvider>

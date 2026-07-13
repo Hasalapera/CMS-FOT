@@ -36,7 +36,7 @@ const calculateUsageBatchvise = async (req, res) => {
         {
           model: Chemical,
           as: "chemical",
-          attributes: ["chemicalCode", "canonicalName"],
+          attributes: ["chemicalCode", "canonicalName", "baseUnit"],
         },
       ],
     });
@@ -55,6 +55,7 @@ const calculateUsageBatchvise = async (req, res) => {
       batchNumber: batch.batchNumber,
       chemicalCode: batch.chemical.chemicalCode,
       chemicalName: batch.chemical.canonicalName,
+      unit: batch.chemical.baseUnit,
       quantityReceived,
       currentQuantity,
       quantityUsed,
