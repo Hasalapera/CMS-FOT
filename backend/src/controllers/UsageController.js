@@ -124,6 +124,7 @@ const calculateUsageChemicalvise = async (req, res) => {
 };
 
 module.exports = {
+  retriveBatchDetails,
   calculateUsageBatchvise,
   calculateUsageChemicalvise,
 };
