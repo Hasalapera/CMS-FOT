@@ -411,6 +411,7 @@ const AddUsers = () => {
                         value={form.password}
                         onChange={handleChange("password")}
                         placeholder="e.g. Password@123"
+                        autoComplete="new-password"
                         className={`w-full rounded-[var(--radius-md)] border bg-[var(--color-surface)] py-3 pl-10 pr-11 text-sm font-medium text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] color-transition ${
                           errors.password
                             ? "border-[var(--color-danger)]"
