@@ -280,7 +280,7 @@ const batchwise = () => {
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           {/* Page header */}
           <header className="mb-6 overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-primary-dark)] shadow-[var(--shadow-md)]">
             <div className="relative p-5 sm:p-7 lg:p-8">
