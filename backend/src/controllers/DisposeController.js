@@ -93,21 +93,18 @@ const updateqty = async (req, res) => {
       }
     }
 
-    // Stock check BEFORE saving
     if (volumeToDeduct > Number(batch.currentQuantity)) {
       return res.status(400).json({
         message: `Quantity used (${volumeToDeduct.toFixed(4)}) exceeds current stock (${batch.currentQuantity})`,
       });
     }
 
-    // Update disposal record
     dispose.quantityUsed = parseFloat(volumeToDeduct.toFixed(4));
     dispose.dateReturned = returnDate;
     dispose.returnedStatus = "RETURNED";
     if (remark !== undefined) dispose.remark = remark;
     await dispose.save();
 
-    // Deduct from batch
     batch.currentQuantity = parseFloat(
       (Number(batch.currentQuantity) - volumeToDeduct).toFixed(4),
     );
