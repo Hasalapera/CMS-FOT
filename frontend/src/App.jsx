@@ -1,122 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Routes, Route } from "react-router-dom";
+import "./App.css";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import AddChemical from "./pages/chemicals/AddChemical";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/Common/ProtectedRoute";
+import DashboardLayout from "./components/Layouts/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import ViewChemicals from "./pages/chemicals/ViewChemicals";
+import ChemicalDetails from "./pages/chemicals/ChemicalDetails";
+import AddUsers from "./pages/admin/AddUsers";
+import ViewUsers from "./pages/admin/ViewUsers";
+import PasswordReset from "./components/PasswordReset";
+import ViewDeactivatedChemicals from "./pages/chemicals/ViewDeactivatedChemicals";
+import AddNewBatch from "./pages/batches/AddNewBatch";
+import AddLocation from "./pages/locations/AddLocation";
+import ViewLocations from "./pages/locations/ViewLocations";
+import LocationDetails from "./pages/locations/LocationDetails";
+import ViewAllBatches from "./pages/batches/ViewAllBatches";
+import ViewBatchDetail from "./pages/batches/ViewBatchDetail";
+import DisposalReq from "./pages/chemicals/DisplosaReq";
+import ReturnedPage from "./pages/chemicals/ReturnedPage";
+import BatchWiseUsage from "./pages/chemicals/usage/BatchWise";
+import ChemicalWiseUsage from "./pages/chemicals/usage/ChemicalWise";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<PasswordReset />} />
+        <Route
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/chemicals/add-chemical" element={<AddChemical />} />
+          <Route path="/chemicals/list" element={<ViewChemicals />} />
+          <Route path="/chemicals/:id" element={<ChemicalDetails />} />
+          <Route
+            path="/chemicals/deactivated"
+            element={<ViewDeactivatedChemicals />}
+          />
+          <Route path="/admin/users/add" element={<AddUsers />} />
+          <Route path="/admin/users/view" element={<ViewUsers />} />
+          <Route path="/stock/add" element={<AddNewBatch />} />
+          <Route path="/locations/add" element={<AddLocation />} />
+          <Route path="/locations" element={<ViewLocations />} />
+          <Route path="/locations/:id" element={<LocationDetails />} />
+          <Route path="/stock/batches" element={<ViewAllBatches />} />
+          <Route path="/stock/batches/:id" element={<ViewBatchDetail />} />
+          <Route path="/disposal/request" element={<DisposalReq />} />
+          <Route path="/disposal/return" element={<ReturnedPage />} />
+          <Route path="/usage/batchwise" element={<BatchWiseUsage />} />
+          <Route path="/usage/chemicalwise" element={<ChemicalWiseUsage />} />
+        </Route>
+      </Routes>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
