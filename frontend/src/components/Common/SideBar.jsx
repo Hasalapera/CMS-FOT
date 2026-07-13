@@ -61,9 +61,21 @@ const MAIN_MENU_ITEMS = [
   },
   {
     label: "Usage",
-    path: "/usage",
     icon: Activity,
+    pathPrefix: "/usage",
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
+    children: [
+      {
+        label: "Show Usage Batch Wise",
+        path: "/usage/batchwise",
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
+      },
+      {
+        label: "Show Usage Chemical Wise",
+        path: "/usage/chemicalwise",
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
+      },
+    ],
   },
   {
     label: "Disposals",
