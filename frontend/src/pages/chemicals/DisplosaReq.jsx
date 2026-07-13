@@ -265,14 +265,12 @@ const DisplosaReq = () => {
         const data = response.data;
 
         setBatchOptions(
-          (data.batches || data || []).map((b) => ({
+          data.batches.map((b) => ({
             value: b.batchNumber,
             label: b.batchNumber,
             sublabel: b.expiryDate
               ? `Expires ${b.expiryDate}`
-              : b.quantity
-                ? `${b.quantity} available`
-                : undefined,
+              : `${b.currentQuantity} available`,
           })),
         );
       } catch (error) {

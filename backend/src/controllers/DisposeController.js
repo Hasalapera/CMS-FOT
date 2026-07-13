@@ -1,6 +1,7 @@
 const { Dispose } = require("../models/index.js");
 const { Chemical } = require("../models/index.js");
 const { Batch } = require("../models/index.js");
+const { Op } = require("sequelize");
 
 const createreleaserecord = async (req, res) => {
   const {
@@ -188,10 +189,16 @@ const getbatchbychemicalid = async (req, res) => {
     if (!chemical) {
       return res.status(404).json({ message: "Chemical not found" });
     }
-
+    const today = new Date().toISOString().split("T")[0];
     const batches = await Batch.findAll({
-      where: { chemicalId: chemical.id },
-      attributes: ["batchNumber"],
+      where: {
+        chemicalId: chemical.id,
+        [Op.or]: [
+          { expiryDate: null }, 
+          { expiryDate: { [Op.gte]: today } },
+        ],
+      },
+      attributes: ["batchNumber", "expiryDate", "currentQuantity"],
       order: [["batchNumber", "ASC"]],
     });
     if (batches.length === 0) {
