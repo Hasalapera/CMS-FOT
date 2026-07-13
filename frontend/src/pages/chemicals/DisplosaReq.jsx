@@ -265,14 +265,16 @@ const DisplosaReq = () => {
         const data = response.data;
 
         setBatchOptions(
-          (data.batches || data || []).map((b) => ({
+          data.batches.map((b) => ({
             value: b.batchNumber,
             label: b.batchNumber,
-            sublabel: b.expiryDate
-              ? `Expires ${b.expiryDate}`
-              : b.quantity
-                ? `${b.quantity} available`
-                : undefined,
+            sublabel: (() => {
+              const qty = parseFloat(b.currentQuantity);
+              const unit = b.chemical?.baseUnit ?? "";
+              const formatted =
+                qty % 1 === 0 ? `${qty.toFixed(0)}` : `${qty}`;
+              return `${formatted}${unit ? ` ${unit}` : ""} available${b.expiryDate ? ` · Expires ${b.expiryDate}` : ""}`;
+            })(),
           })),
         );
       } catch (error) {
