@@ -199,6 +199,13 @@ const getbatchbychemicalid = async (req, res) => {
         ],
       },
       attributes: ["batchNumber", "expiryDate", "currentQuantity"],
+      include: [
+        {
+          model: Chemical,
+          as: "chemical",
+          attributes: ["baseUnit"],
+        },
+      ],
       order: [["batchNumber", "ASC"]],
     });
     if (batches.length === 0) {
