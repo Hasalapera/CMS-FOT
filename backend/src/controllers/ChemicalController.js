@@ -1,0 +1,574 @@
+const { Chemical } = require('../models/index.js');
+const { Op } = require('sequelize');
+const axios = require('axios');
+
+const getNextChemicalCode = async (req, res) => {
+  try {
+    // Count all existing chemicals to determine the next ID
+    const chemicalCount = await Chemical.count();
+    const nextId = chemicalCount + 1;
+
+    // Format the number with leading zeros to a length of 6
+    const paddedId = String(nextId).padStart(6, '0');
+    const nextCode = `CHE-${paddedId}`;
+
+    res.status(200).json({
+      success: true,
+      nextCode,
+    });
+  } catch (error) {
+    console.error('Error generating next chemical code:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while generating chemical code.' });
+  }
+};
+
+const addChemical = async (req, res) => {
+  try {
+    // When using multipart/form-data, arrays and other types might be stringified.
+    const payload = { ...req.body };
+
+    if (payload.synonyms && typeof payload.synonyms === 'string') {
+      try {
+        payload.synonyms = JSON.parse(payload.synonyms);
+      } catch (e) {
+        console.warn("Could not parse synonyms, defaulting to empty array.", payload.synonyms);
+        payload.synonyms = [];
+      }
+    }
+
+    // Basic validation for required fields based on the model
+    if (!payload.chemicalCode || !payload.canonicalName || !payload.stockDimension || !payload.baseUnit) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Missing required fields. Chemical code, canonical name, stock dimension, and base unit are required.' 
+      });
+    }
+
+    // Check if a chemical with the same code or name already exists (case-insensitive)
+    const existingChemical = await Chemical.findOne({
+      where: {
+        [Op.or]: [
+          { chemicalCode: { [Op.iLike]: payload.chemicalCode.trim() } },
+          { canonicalName: { [Op.iLike]: payload.canonicalName.trim() } }
+        ]
+      },
+    });
+
+    if (existingChemical) {
+      const field = existingChemical.chemicalCode.toLowerCase() === payload.chemicalCode.trim().toLowerCase() ? 'code' : 'name';
+      return res.status(409).json({ 
+        success: false,
+        message: `A chemical with this ${field} already exists.` 
+      });
+    }
+
+    // Add file info to the payload if a file was uploaded
+    if (req.file) {
+      payload.sdsStorageKey = req.file.filename; // Store filename only, not the full path
+      payload.sdsOriginalFilename = req.file.originalname;
+      payload.sdsMimeType = req.file.mimetype;
+      payload.sdsFileSize = req.file.size;
+      payload.sdsUploadedAt = new Date();
+      payload.sdsUploadedById = req.user.id; // From verifyToken middleware
+    }
+
+    // Create the new chemical in the database
+    const chemical = await Chemical.create(payload);
+
+    res.status(201).json({
+      success: true,
+      message: 'Chemical created successfully',
+      chemical,
+    });
+  } catch (error) {
+    console.error('Error creating chemical:', error);
+    if (error.name === 'SequelizeValidationError') {
+      const messages = error.errors.map(e => e.message);
+      return res.status(400).json({ success: false, message: messages.join('. ') });
+    }
+    res.status(500).json({ success: false, message: 'Internal server error while creating chemical.' });
+  }
+};
+
+const getAllChemicals = async (req, res) => {
+  try {
+    const chemicals = await Chemical.findAll({ // Only fetch active chemicals by default
+      order: [['createdAt', 'DESC']],
+    });
+    res.status(200).json({
+      success: true,
+      chemicals,
+    });
+  } catch (error) {
+    console.error('Error fetching chemicals:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching chemicals.' });
+  }
+};
+
+const getInactiveChemicals = async (req, res) => {
+  try {
+    const chemicals = await Chemical.findAll({
+      where: { isActive: false },
+      order: [['updatedAt', 'DESC']], // Order by when they were deactivated
+    });
+    res.status(200).json({
+      success: true,
+      chemicals,
+    });
+  } catch (error) {
+    console.error('Error fetching inactive chemicals:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching inactive chemicals.' });
+  }
+};
+
+const getChemicalById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const chemical = await Chemical.findByPk(id);
+
+    if (!chemical) {
+      return res.status(404).json({ success: false, message: 'Chemical not found.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      chemical,
+    });
+  } catch (error) {
+    console.error(`Error fetching chemical with ID ${req.params.id}:`, error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching chemical details.' });
+  }
+};
+
+const updateChemical = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const chemical = await Chemical.findByPk(id);
+    if (!chemical) {
+      return res.status(404).json({ success: false, message: 'Chemical not found.' });
+    }
+
+    const payload = { ...req.body };
+
+    if (payload.synonyms && typeof payload.synonyms === 'string') {
+      try {
+        payload.synonyms = JSON.parse(payload.synonyms);
+      } catch (e) {
+        console.warn("Could not parse synonyms on update, keeping original.", payload.synonyms);
+        payload.synonyms = chemical.synonyms;
+      }
+    }
+
+    if (payload.canonicalName && payload.canonicalName.trim().toLowerCase() !== chemical.canonicalName.toLowerCase()) {
+      const existingChemical = await Chemical.findOne({
+        where: {
+          canonicalName: { [Op.iLike]: payload.canonicalName.trim() },
+          id: { [Op.ne]: id }
+        },
+      });
+      if (existingChemical) {
+        return res.status(409).json({
+          success: false,
+          message: `A chemical with the name "${payload.canonicalName}" already exists.`
+        });
+      }
+    }
+
+    if (req.file) {
+      // Note: This doesn't delete the old file. For a production system, you'd want a cleanup job.
+      payload.sdsStorageKey = req.file.filename; // Store filename only, not the full path
+      payload.sdsOriginalFilename = req.file.originalname;
+      payload.sdsMimeType = req.file.mimetype;
+      payload.sdsFileSize = req.file.size;
+      payload.sdsUploadedAt = new Date();
+      payload.sdsUploadedById = req.user.id;
+    }
+
+    await chemical.update(payload);
+
+    res.status(200).json({
+      success: true,
+      message: 'Chemical updated successfully',
+      chemical,
+    });
+  } catch (error) {
+    console.error(`Error updating chemical with ID ${id}:`, error);
+    if (error.name === 'SequelizeValidationError') {
+      const messages = error.errors.map(e => e.message);
+      return res.status(400).json({ success: false, message: messages.join('. ') });
+    }
+    res.status(500).json({ success: false, message: 'Internal server error while updating chemical.' });
+  }
+};
+
+const softDeleteChemical = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const chemical = await Chemical.findByPk(id);
+    if (!chemical) {
+      return res.status(404).json({ success: false, message: 'Chemical not found.' });
+    }
+
+    // Soft delete by setting isActive to false
+    chemical.isActive = false;
+    await chemical.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Chemical has been deactivated successfully.',
+    });
+  } catch (error) {
+    console.error(`Error deactivating chemical with ID ${id}:`, error);
+    res.status(500).json({ success: false, message: 'Internal server error while deactivating chemical.' });
+  }
+};
+
+const reactivateChemical = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const chemical = await Chemical.findByPk(id);
+    if (!chemical) {
+      return res.status(404).json({ success: false, message: 'Chemical not found.' });
+    }
+
+    // Reactivate by setting isActive to true
+    chemical.isActive = true;
+    await chemical.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Chemical has been reactivated successfully.',
+      chemical,
+    });
+  } catch (error) {
+    console.error(`Error reactivating chemical with ID ${id}:`, error);
+    res.status(500).json({ success: false, message: 'Internal server error while reactivating chemical.' });
+  }
+};
+
+const CAS_NUMBER_REGEX = /^\d{2,7}-\d{2}-\d$/;
+
+/**
+ * Validate CAS Registry Number checksum.
+ *
+ * Example: 7647-01-0
+ */
+const isValidCasNumber = (casNumber) => {
+  if (!CAS_NUMBER_REGEX.test(casNumber)) {
+    return false;
+  }
+
+  const digits = casNumber.replace(/-/g, '');
+  const checkDigit = Number(digits.at(-1));
+  const mainDigits = digits.slice(0, -1).split('').reverse();
+
+  const sum = mainDigits.reduce(
+    (total, digit, index) => total + Number(digit) * (index + 1),
+    0
+  );
+
+  return sum % 10 === checkDigit;
+};
+
+/**
+ * Convert common density units returned by PubChem
+ * into units supported by this application.
+ */
+const normalizeDensityUnit = (unit = '') => {
+  const normalized = unit
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/cm3/g, 'cm³')
+    .replace(/cm\^3/g, 'cm³')
+    .replace(/m3/g, 'm³')
+    .replace(/m\^3/g, 'm³');
+
+  const unitMap = {
+    'g/ml': 'g/mL',
+    'g/cm³': 'g/cm³',
+    'kg/l': 'kg/L',
+    'kg/m³': 'kg/m³',
+  };
+
+  return unitMap[normalized] || null;
+};
+
+/**
+ * Try to extract a density value and unit from text.
+ *
+ * Supported examples:
+ * 1.18 g/mL
+ * 1.18 g/cu cm
+ * 1000 kg/m3
+ */
+const parseDensityText = (text) => {
+  if (!text || typeof text !== 'string') {
+    return null;
+  }
+
+  const cleanedText = text
+    .replace(/cu\.?\s*cm/gi, 'cm³')
+    .replace(/cm\^?3/gi, 'cm³')
+    .replace(/m\^?3/gi, 'm³');
+
+  const match = cleanedText.match(
+    /(\d+(?:\.\d+)?)\s*(g\/mL|g\/cm³|kg\/L|kg\/m³)/i
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const densityValue = Number(match[1]);
+  const densityUnit = normalizeDensityUnit(match[2]);
+
+  if (!Number.isFinite(densityValue) || densityValue <= 0 || !densityUnit) {
+    return null;
+  }
+
+  return {
+    value: densityValue,
+    unit: densityUnit,
+    sourceText: text,
+  };
+};
+
+/**
+ * Recursively find PubChem sections whose heading contains "Density".
+ */
+const findDensitySections = (node, results = []) => {
+  if (!node || typeof node !== 'object') {
+    return results;
+  }
+
+  if (
+    typeof node.TOCHeading === 'string' &&
+    node.TOCHeading.toLowerCase().includes('density')
+  ) {
+    results.push(node);
+  }
+
+  Object.values(node).forEach((value) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => findDensitySections(item, results));
+    } else if (value && typeof value === 'object') {
+      findDensitySections(value, results);
+    }
+  });
+
+  return results;
+};
+
+/**
+ * Collect display strings from a PubChem information section.
+ */
+const collectPubChemStrings = (node, results = []) => {
+  if (!node || typeof node !== 'object') {
+    return results;
+  }
+
+  if (typeof node.String === 'string') {
+    results.push(node.String);
+  }
+
+  if (typeof node.StringWithMarkup === 'string') {
+    results.push(node.StringWithMarkup);
+  }
+
+  Object.values(node).forEach((value) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectPubChemStrings(item, results));
+    } else if (value && typeof value === 'object') {
+      collectPubChemStrings(value, results);
+    }
+  });
+
+  return results;
+};
+
+const getChemicalDataByCas = async (req, res) => {
+  try {
+    const casNumber = String(req.params.casNumber || '').trim();
+
+    if (!casNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'CAS number is required.',
+      });
+    }
+
+    if (!isValidCasNumber(casNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid CAS number format or checksum.',
+      });
+    }
+
+    const encodedCas = encodeURIComponent(casNumber);
+
+    /*
+     * Step 1:
+     * Search PubChem using the CAS number and get its CID.
+     */
+    let cidResponse;
+
+    try {
+      cidResponse = await axios.get(
+        `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodedCas}/cids/JSON`,
+        {
+          timeout: 10000,
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+    } catch (compoundSearchError) {
+      /*
+       * Some CAS identifiers may only be indexed under PubChem substances.
+       * In that case, search substances and resolve them to compound CIDs.
+       */
+      cidResponse = await axios.get(
+        `https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/name/${encodedCas}/cids/JSON`,
+        {
+          timeout: 10000,
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+    }
+
+    const cid = cidResponse.data?.IdentifierList?.CID?.[0];
+
+    if (!cid) {
+      return res.status(404).json({
+        success: false,
+        message: 'No chemical was found for this CAS number.',
+      });
+    }
+
+    /*
+     * Step 2:
+     * Get standard identity properties.
+     */
+    const propertyUrl =
+      `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}` +
+      '/property/Title,IUPACName,MolecularFormula/JSON';
+
+    const propertyPromise = axios.get(propertyUrl, {
+      timeout: 10000,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    /*
+     * Step 3:
+     * Get annotation data because density is normally stored
+     * in PubChem's experimental property annotations.
+     */
+    const viewPromise = axios.get(
+      `https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON`,
+      {
+        timeout: 15000,
+        headers: {
+          Accept: 'application/json',
+        },
+      }
+    );
+
+    const [propertyResult, viewResult] = await Promise.allSettled([
+      propertyPromise,
+      viewPromise,
+    ]);
+
+    const properties =
+      propertyResult.status === 'fulfilled'
+        ? propertyResult.value.data?.PropertyTable?.Properties?.[0] || {}
+        : {};
+
+    let density = null;
+
+    if (viewResult.status === 'fulfilled') {
+      const densitySections = findDensitySections(viewResult.value.data);
+
+      for (const section of densitySections) {
+        const densityStrings = collectPubChemStrings(section);
+
+        for (const text of densityStrings) {
+          const parsedDensity = parseDensityText(text);
+
+          if (parsedDensity) {
+            density = parsedDensity;
+            break;
+          }
+        }
+
+        if (density) {
+          break;
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: density
+        ? 'Chemical information and density were found.'
+        : 'Chemical information was found, but density was unavailable.',
+      chemical: {
+        pubchemCid: cid,
+        casNumber,
+        canonicalName:
+          properties.Title ||
+          properties.IUPACName ||
+          '',
+        formula: properties.MolecularFormula || '',
+        densityValue: density?.value ?? null,
+        densityUnit: density?.unit ?? null,
+        densitySourceText: density?.sourceText ?? null,
+        source: 'PubChem',
+      },
+    });
+  } catch (error) {
+    console.error(
+      'Error retrieving chemical information from PubChem:',
+      error.response?.data || error.message
+    );
+
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        message: 'No PubChem record was found for this CAS number.',
+      });
+    }
+
+    if (
+      error.code === 'ECONNABORTED' ||
+      error.code === 'ETIMEDOUT'
+    ) {
+      return res.status(504).json({
+        success: false,
+        message: 'The chemical information service took too long to respond.',
+      });
+    }
+
+    return res.status(502).json({
+      success: false,
+      message:
+        'Unable to retrieve chemical information from the external service.',
+    });
+  }
+};
+
+module.exports = {
+  addChemical,
+  getNextChemicalCode,
+  getAllChemicals,
+  updateChemical,
+  getChemicalById,
+  softDeleteChemical,
+  getInactiveChemicals,
+  reactivateChemical,
+  getChemicalDataByCas,
+};
