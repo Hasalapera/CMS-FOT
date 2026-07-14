@@ -264,8 +264,17 @@ const DisplosaReq = () => {
         );
         const data = response.data;
 
+        // Sort batches: earliest expiry date first (soonest to expire).
+        // Batches without an expiry date are pushed to the end.
+        const sortedBatches = [...(data.batches || [])].sort((a, b) => {
+          if (!a.expiryDate && !b.expiryDate) return 0;
+          if (!a.expiryDate) return 1;
+          if (!b.expiryDate) return -1;
+          return new Date(a.expiryDate) - new Date(b.expiryDate);
+        });
+
         setBatchOptions(
-          data.batches.map((b) => ({
+          sortedBatches.map((b) => ({
             value: b.batchNumber,
             label: b.batchNumber,
             sublabel: (() => {
