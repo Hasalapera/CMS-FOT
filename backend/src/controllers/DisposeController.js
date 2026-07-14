@@ -2,6 +2,7 @@ const { Dispose } = require("../models/index.js");
 const { Chemical } = require("../models/index.js");
 const { Batch } = require("../models/index.js");
 const { Op } = require("sequelize");
+const { logAction } = require("../services/auditLogService.js");
 
 const createreleaserecord = async (req, res) => {
   const {
@@ -38,6 +39,21 @@ const createreleaserecord = async (req, res) => {
       userId: userId,
       userName: userName,
       remark: remark,
+    });
+
+    // Audit Log: Chemical Released
+    await logAction({
+      userId: req.user?.id, // Assuming user is on req from auth middleware
+      userName: req.user?.fullName || userName,
+      actionType: "RELEASE_CHEMICAL",
+      entityType: "Dispose",
+      entityId: dispose.id,
+      details: {
+        chemicalCode: dispose.chemicalCode,
+        batchNumber: dispose.batchNumber,
+        purpose: dispose.purpose,
+      },
+      ipAddress: req.ip,
     });
     res
       .status(201)
@@ -110,6 +126,23 @@ const updateqty = async (req, res) => {
       (Number(batch.currentQuantity) - volumeToDeduct).toFixed(4),
     );
     await batch.save();
+
+    // Audit Log: Chemical Returned
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName || dispose.userName,
+      actionType: "RETURN_CHEMICAL",
+      entityType: "Dispose",
+      entityId: dispose.id,
+      details: {
+        chemicalCode: dispose.chemicalCode,
+        batchNumber: dispose.batchNumber,
+        quantityUsed: dispose.quantityUsed,
+        stockDeducted: volumeToDeduct.toFixed(4),
+        conversionNote: conversionNote,
+      },
+      ipAddress: req.ip,
+    });
 
     res.json({
       message: "Quantity updated and stock deducted successfully",

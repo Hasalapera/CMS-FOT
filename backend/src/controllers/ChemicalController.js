@@ -1,5 +1,6 @@
 const { Chemical } = require('../models/index.js');
 const { Op } = require('sequelize');
+const { logAction } = require("../services/auditLogService.js");
 const axios = require('axios');
 
 const getNextChemicalCode = async (req, res) => {
@@ -75,6 +76,22 @@ const addChemical = async (req, res) => {
     // Create the new chemical in the database
     const chemical = await Chemical.create(payload);
 
+    // Audit Log: Chemical Creation
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName,
+      actionType: "CREATE_CHEMICAL",
+      entityType: "Chemical",
+      entityId: chemical.id,
+      details: {
+        chemicalCode: chemical.chemicalCode,
+        canonicalName: chemical.canonicalName,
+        stockDimension: chemical.stockDimension,
+        baseUnit: chemical.baseUnit,
+      },
+      ipAddress: req.ip,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Chemical created successfully',
@@ -144,6 +161,14 @@ const updateChemical = async (req, res) => {
   const { id } = req.params;
   try {
     const chemical = await Chemical.findByPk(id);
+
+    // Store the state *before* the update for the audit log
+    const beforeUpdate = {
+      canonicalName: chemical.canonicalName,
+      casNumber: chemical.casNumber,
+      isActive: chemical.isActive,
+    };
+
     if (!chemical) {
       return res.status(404).json({ success: false, message: 'Chemical not found.' });
     }
@@ -186,6 +211,20 @@ const updateChemical = async (req, res) => {
 
     await chemical.update(payload);
 
+    // Audit Log: Chemical Update
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName,
+      actionType: "UPDATE_CHEMICAL",
+      entityType: "Chemical",
+      entityId: chemical.id,
+      details: {
+        before: beforeUpdate,
+        after: payload, // Log the changes that were sent
+      },
+      ipAddress: req.ip,
+    });
+
     res.status(200).json({
       success: true,
       message: 'Chemical updated successfully',
@@ -213,6 +252,20 @@ const softDeleteChemical = async (req, res) => {
     chemical.isActive = false;
     await chemical.save();
 
+    // Audit Log: Deactivate Chemical
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName,
+      actionType: "DEACTIVATE_CHEMICAL",
+      entityType: "Chemical",
+      entityId: chemical.id,
+      details: {
+        chemicalCode: chemical.chemicalCode,
+        canonicalName: chemical.canonicalName,
+      },
+      ipAddress: req.ip,
+    });
+
     res.status(200).json({
       success: true,
       message: 'Chemical has been deactivated successfully.',
@@ -234,6 +287,20 @@ const reactivateChemical = async (req, res) => {
     // Reactivate by setting isActive to true
     chemical.isActive = true;
     await chemical.save();
+
+    // Audit Log: Reactivate Chemical
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName,
+      actionType: "REACTIVATE_CHEMICAL",
+      entityType: "Chemical",
+      entityId: chemical.id,
+      details: {
+        chemicalCode: chemical.chemicalCode,
+        canonicalName: chemical.canonicalName,
+      },
+      ipAddress: req.ip,
+    });
 
     res.status(200).json({
       success: true,

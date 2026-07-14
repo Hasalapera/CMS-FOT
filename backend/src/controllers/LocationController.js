@@ -1,5 +1,6 @@
 const { Location, Batch, Chemical } = require('../models/index.js');
 const { Op } = require('sequelize');
+const { logAction } = require('../services/auditLogService.js');
 
 const addLocation = async (req, res) => {
   try {
@@ -33,6 +34,21 @@ const addLocation = async (req, res) => {
       name: name.trim(),
       type,
       parentLocationId: parentId,
+    });
+
+    // Audit Log: Location Creation
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName,
+      actionType: "CREATE_LOCATION",
+      entityType: "Location",
+      entityId: newLocation.id,
+      details: {
+        name: newLocation.name,
+        type: newLocation.type,
+        parentLocationId: newLocation.parentLocationId,
+      },
+      ipAddress: req.ip,
     });
 
     res.status(201).json({
