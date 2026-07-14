@@ -17,6 +17,8 @@
     "db:migrate:status:dev": "cross-env NODE_ENV=development sequelize-cli db:migrate:status",
     "db:migrate:undo:dev": "cross-env NODE_ENV=development sequelize-cli db:migrate:undo",
     "db:migrate:test": "cross-env NODE_ENV=test sequelize-cli db:migrate",
+    "db:migrate:undo:test": "cross-env NODE_ENV=test sequelize-cli db:migrate:undo",
+    "db:migrate:undo:prod": "cross-env NODE_ENV=production sequelize-cli db:migrate:undo",
     "db:migrate:prod": "cross-env NODE_ENV=production sequelize-cli db:migrate",
     "db:seed:create": "sequelize-cli seed:generate",
     "db:seed:dev": "cross-env NODE_ENV=development sequelize-cli db:seed:all",
