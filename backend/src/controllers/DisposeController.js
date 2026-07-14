@@ -6,14 +6,14 @@ const { Op } = require("sequelize");
 const createreleaserecord = async (req, res) => {
   const {
     chemicalCode,
-    batchCode,
+    batchNumber,
     dateReleased,
     purpose,
     userId,
     userName,
     remark,
   } = req.body;
-  if (!chemicalCode || !batchCode || !dateReleased || !purpose || !userId) {
+  if (!chemicalCode || !batchNumber || !dateReleased || !purpose || !userId) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
@@ -24,7 +24,7 @@ const createreleaserecord = async (req, res) => {
       return res.status(404).json({ message: "Chemical not found" });
     }
     const batch = await Batch.findOne({
-      where: { batchNumber: batchCode },
+      where: { batchNumber: batchNumber },
     });
     if (!batch) {
       return res.status(404).json({ message: "Batch not found" });
@@ -32,7 +32,7 @@ const createreleaserecord = async (req, res) => {
     const dispose = await Dispose.create({
       chemicalCode: chemicalCode,
       chemicalName: chemical.canonicalName,
-      batchNumber: batchCode,
+      batchNumber: batchNumber,
       dateReleased: dateReleased,
       purpose: purpose,
       userId: userId,

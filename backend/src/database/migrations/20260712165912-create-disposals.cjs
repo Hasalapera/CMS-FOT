@@ -32,9 +32,8 @@ module.exports = {
         allowNull: false,
       },
 
-      batch_code: {
+      batch_number: {
         type: Sequelize.STRING(100),
-
         allowNull: false,
       },
 
