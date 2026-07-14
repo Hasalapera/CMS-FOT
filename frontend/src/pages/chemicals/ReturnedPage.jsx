@@ -142,7 +142,7 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
             type="button"
             onClick={() => !isSubmitting && onClose()}
             aria-label="Close"
-            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-[var(--color-text-inverse)] color-transition hover:bg-white/20"
+            className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-[var(--color-text-inverse)] color-transition hover:bg-white/20"
           >
             <X size={16} />
           </button>
