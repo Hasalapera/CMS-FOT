@@ -54,8 +54,8 @@ const calculateUsageBatchvise = async (req, res) => {
 
     // Audit Log: View Batch Usage Report
     await logAction({
-      userId: req.user?.id,
-      userName: req.user?.fullName,
+      userId: req.user.id,
+      userName: req.user.fullName,
       actionType: "VIEW_BATCH_USAGE_REPORT",
       entityType: "Batch",
       entityId: batch.id,
@@ -128,8 +128,8 @@ const calculateUsageChemicalvise = async (req, res) => {
 
     // Audit Log: View Chemical Usage Report
     await logAction({
-      userId: req.user?.id,
-      userName: req.user?.fullName,
+      userId: req.user.id,
+      userName: req.user.fullName,
       actionType: "VIEW_CHEMICAL_USAGE_REPORT",
       entityType: "Chemical",
       entityId: chemical.id,

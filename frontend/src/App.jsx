@@ -24,6 +24,7 @@ import ReturnedPage from "./pages/chemicals/ReturnedPage";
 import BatchWiseUsage from "./pages/chemicals/usage/BatchWise";
 import ChemicalWiseUsage from "./pages/chemicals/usage/ChemicalWise";
 import AuditLogsPage from "./pages/admin/AuditLogsPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function App() {
   return (
@@ -81,6 +82,14 @@ function App() {
           <Route path="/disposal/return" element={<ReturnedPage />} />
           <Route path="/usage/batchwise" element={<BatchWiseUsage />} />
           <Route path="/usage/chemicalwise" element={<ChemicalWiseUsage />} />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute roles={["ADMIN", "TECHNICAL_OFFICER"]}>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </AuthProvider>

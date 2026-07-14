@@ -52,9 +52,10 @@ module.exports = function DisposeModel(sequelize) {
       },
 
       userId: {
-        type: DataTypes.STRING(50),
+        type: DataTypes.UUID,
         allowNull: false,
         field: "user_id",
+        comment: "Foreign key to the users table",
       },
 
       userName: {

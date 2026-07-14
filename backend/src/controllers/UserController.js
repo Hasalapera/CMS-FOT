@@ -2,6 +2,7 @@ const { User } = require("../models/index.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { logAction } = require("../services/auditLogService.js");
+const { createNotification } = require("../services/notificationService.js");
 
 const createUser = async (req, res) => {
   try {
@@ -36,14 +37,32 @@ const createUser = async (req, res) => {
       role,
     });
 
+    // --- Notification: New User Added ---
+    // The user performing the action is the 'actor'
+    const actor = { id: req.user.id, fullName: req.user.fullName };
+    // The user being created is the 'entity'
+    const entity = user;
+
+    await createNotification({
+      actor,
+      entity,
+      entityType: 'User',
+      type: 'NEW_USER_ADDED',
+      severity: 'INFO',
+      messageBuilder: {
+        // Message for the person who performed the action
+        actor: (e) => `You have added a new user: ${e.fullName} (${e.role}).`,
+        // Message for everyone else
+        others: (actorName, e) => `${actorName} has added a new user: ${e.fullName} (${e.role}).`,
+      },
+    });
+
     // Audit Log: User Creation
     // We assume an admin is performing this action and is available in req.user
     if (req.user && req.user.id !== user.id) {
-      // Fetch admin user's name for a more descriptive log
-      const adminUser = await User.findByPk(req.user.id, { attributes: ['fullName'] });
       await logAction({
         userId: req.user.id,
-        userName: adminUser ? adminUser.fullName : 'N/A',
+        userName: req.user.fullName,
         actionType: "CREATE_USER",
         entityType: "User",
         entityId: user.id,

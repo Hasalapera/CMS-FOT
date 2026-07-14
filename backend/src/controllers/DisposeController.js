@@ -3,6 +3,7 @@ const { Chemical } = require("../models/index.js");
 const { Batch } = require("../models/index.js");
 const { Op } = require("sequelize");
 const { logAction } = require("../services/auditLogService.js");
+const { notifyLowStockBatch } = require("../services/notificationService.js");
 
 const createreleaserecord = async (req, res) => {
   const {
@@ -10,11 +11,9 @@ const createreleaserecord = async (req, res) => {
     batchNumber,
     dateReleased,
     purpose,
-    userId,
-    userName,
     remark,
   } = req.body;
-  if (!chemicalCode || !batchNumber || !dateReleased || !purpose || !userId) {
+  if (!chemicalCode || !batchNumber || !dateReleased || !purpose) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
@@ -36,15 +35,15 @@ const createreleaserecord = async (req, res) => {
       batchNumber: batchNumber,
       dateReleased: dateReleased,
       purpose: purpose,
-      userId: userId,
-      userName: userName,
+      userId: req.user.id,       // From verifyToken middleware
+      userName: req.user.fullName, // From verifyToken middleware
       remark: remark,
     });
 
     // Audit Log: Chemical Released
     await logAction({
-      userId: req.user?.id, // Assuming user is on req from auth middleware
-      userName: req.user?.fullName || userName,
+      userId: req.user.id,
+      userName: req.user.fullName,
       actionType: "RELEASE_CHEMICAL",
       entityType: "Dispose",
       entityId: dispose.id,
@@ -126,11 +125,12 @@ const updateqty = async (req, res) => {
       (Number(batch.currentQuantity) - volumeToDeduct).toFixed(4),
     );
     await batch.save();
+    await notifyLowStockBatch(batch.id);
 
     // Audit Log: Chemical Returned
     await logAction({
-      userId: req.user?.id,
-      userName: req.user?.fullName || dispose.userName,
+      userId: req.user.id,
+      userName: req.user.fullName,
       actionType: "RETURN_CHEMICAL",
       entityType: "Dispose",
       entityId: dispose.id,

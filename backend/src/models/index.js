@@ -10,6 +10,7 @@ const Batch = require("./Batch")(sequelize, DataTypes);
 const Location = require("./Location")(sequelize, DataTypes);
 const Dispose = require("./Dispose")(sequelize, DataTypes);
 const AuditLog = require("./AuditLog")(sequelize, DataTypes);
+const Notification = require("./Notification")(sequelize, DataTypes);
 
 // --- Centralized Model Associations ---
 
@@ -68,7 +69,17 @@ Chemical.hasMany(Dispose, {
   as: "disposals",
 });
 
-// 6. AuditLog <-> User
+// 6. Dispose <-> User
+Dispose.belongsTo(User, {
+  foreignKey: "userId",
+  as: "requestingUser",
+});
+User.hasMany(Dispose, {
+  foreignKey: "userId",
+  as: "disposalRequests",
+});
+
+// 7. AuditLog <-> User
 AuditLog.belongsTo(User, {
   foreignKey: "userId",
   as: "user",
@@ -78,5 +89,15 @@ User.hasMany(AuditLog, {
   as: "auditLogs",
 });
 
+// 8. Notification <-> User
+Notification.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user", // The user who receives the notification
+});
+User.hasMany(Notification, {
+  foreignKey: "userId",
+  as: "notifications",
+});
+
 // --- Exports ---
-module.exports = { sequelize, User, Chemical, Batch, Location, Dispose, AuditLog };
+module.exports = { sequelize, User, Chemical, Batch, Location, Dispose, AuditLog, Notification };

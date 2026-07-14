@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import api from "../../api/axiosInstance";
 import {
   LayoutDashboard,
   FlaskConical,
@@ -8,7 +10,7 @@ import {
   Warehouse,
   MapPin,
   FileText,
-  Bell,
+  Bell as BellIcon,
   ChartNoAxesCombined,
   Truck,
   Users,
@@ -139,8 +141,8 @@ const MAIN_MENU_ITEMS = [
   },
   {
     label: "Alerts & Notifications",
-    path: "/alerts",
-    icon: Bell,
+    path: "/notifications",
+    icon: BellIcon,
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
   },
   {
@@ -196,8 +198,10 @@ const getInitials = (name = "") => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const SidebarLink = ({ item, closeMobileMenu }) => {
+const SidebarLink = ({ item, closeMobileMenu, notificationCount = 0 }) => {
   const Icon = item.icon;
+  const showNotificationBadge =
+    item.path === "/notifications" && notificationCount > 0;
 
   return (
     <NavLink
@@ -227,6 +231,12 @@ const SidebarLink = ({ item, closeMobileMenu }) => {
           </span>
 
           <span className="min-w-0 flex-1 truncate">{item.label}</span>
+
+          {showNotificationBadge && (
+            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] px-1.5 text-[10px] font-bold text-[var(--color-primary-dark)]">
+              {notificationCount > 99 ? "99+" : notificationCount}
+            </span>
+          )}
 
           {isActive && (
             <ChevronRight
@@ -328,6 +338,7 @@ const SidebarContent = ({
   adminItems,
   closeMobileMenu,
   handleLogout,
+  notificationCount,
 }) => {
   const navigate = useNavigate();
 
@@ -386,6 +397,7 @@ const SidebarContent = ({
                   key={item.path}
                   item={item}
                   closeMobileMenu={closeMobileMenu}
+                  notificationCount={notificationCount}
                 />
               ),
             )}
@@ -412,6 +424,7 @@ const SidebarContent = ({
                     key={item.path}
                     item={item}
                     closeMobileMenu={closeMobileMenu}
+                    notificationCount={notificationCount}
                   />
                 ),
               )}
@@ -473,6 +486,14 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const { data: countData } = useQuery({
+    queryKey: ["notificationCount"],
+    queryFn: () => api.get("/notifications/count"),
+    select: (res) => res.data.count,
+    enabled: !!user && (user.role === "ADMIN" || user.role === "TECHNICAL_OFFICER"),
+    refetchInterval: 60000, // Refetch every 60 seconds
+  });
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -553,15 +574,14 @@ const Sidebar = () => {
 
         <button
           type="button"
-          onClick={() => navigate("/alerts")}
+          onClick={() => navigate("/notifications")}
           className="relative flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-primary)] color-transition hover:bg-[var(--color-primary-tint)]"
           aria-label="Open notifications"
         >
-          <Bell size={21} />
-
-          {(role === "ADMIN" || role === "TECHNICAL_OFFICER") && (
-            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[9px] font-bold text-[var(--color-primary-dark)]">
-              3
+          <BellIcon size={21} />
+          {countData > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[9px] font-bold text-[var(--color-primary-dark)] ring-1 ring-[var(--color-surface)]">
+              {countData > 9 ? "9+" : countData}
             </span>
           )}
         </button>
@@ -575,6 +595,7 @@ const Sidebar = () => {
           adminItems={adminItems}
           closeMobileMenu={closeMobileMenu}
           handleLogout={handleLogout}
+          notificationCount={countData || 0}
         />
       </aside>
 
@@ -623,6 +644,7 @@ const Sidebar = () => {
             adminItems={adminItems}
             closeMobileMenu={closeMobileMenu}
             handleLogout={handleLogout}
+            notificationCount={countData || 0}
           />
         </aside>
       </div>
