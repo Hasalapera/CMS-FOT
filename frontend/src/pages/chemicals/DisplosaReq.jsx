@@ -22,7 +22,7 @@ import api from "../../api/axiosInstance";
 
 const INITIAL_FORM = {
   chemicalCode: "",
-  batchCode: "",
+  batchNumber: "",
   dateReleased: "",
   purpose: "",
   userId: "",
@@ -281,7 +281,7 @@ const DisplosaReq = () => {
         setBatchOptions([]);
         setErrors((prev) => ({
           ...prev,
-          batchCode: "Unable to load batches for this chemical.",
+          batchNumber: "Unable to load batches for this chemical.",
         }));
       } finally {
         setIsBatchLoading(false);
@@ -292,14 +292,14 @@ const DisplosaReq = () => {
   }, [form.chemicalCode]);
 
   const handleChemicalChange = (value) => {
-    setForm((prev) => ({ ...prev, chemicalCode: value, batchCode: "" }));
-    setErrors((prev) => ({ ...prev, chemicalCode: "", batchCode: "" }));
+    setForm((prev) => ({ ...prev, chemicalCode: value, batchNumber: "" }));
+    setErrors((prev) => ({ ...prev, chemicalCode: "", batchNumber: "" }));
     setSubmitMessage(null);
   };
 
   const handleBatchChange = (value) => {
-    setForm((prev) => ({ ...prev, batchCode: value }));
-    setErrors((prev) => ({ ...prev, batchCode: "" }));
+    setForm((prev) => ({ ...prev, batchNumber: value }));
+    setErrors((prev) => ({ ...prev, batchNumber: "" }));
     setSubmitMessage(null);
   };
 
@@ -313,7 +313,7 @@ const DisplosaReq = () => {
     const nextErrors = {};
 
     if (!form.chemicalCode) nextErrors.chemicalCode = "Select a chemical.";
-    if (!form.batchCode) nextErrors.batchCode = "Select a batch.";
+    if (!form.batchNumber) nextErrors.batchNumber = "Select a batch.";
     if (!form.dateReleased)
       nextErrors.dateReleased = "Release date is required.";
     if (!form.purpose.trim())
@@ -485,7 +485,7 @@ const DisplosaReq = () => {
 
                     <div>
                       <InputLabel
-                        htmlFor="batchCode"
+                        htmlFor="batchNumber"
                         required
                         description={
                           form.chemicalCode
@@ -498,15 +498,15 @@ const DisplosaReq = () => {
                       <SearchableSelect
                         icon={Boxes}
                         options={batchOptions}
-                        value={form.batchCode}
+                        value={form.batchNumber}
                         onChange={handleBatchChange}
                         placeholder="Select a batch"
                         disabled={!form.chemicalCode}
                         loading={isBatchLoading}
-                        error={errors.batchCode}
+                        error={errors.batchNumber}
                         emptyText="No batches available for this chemical."
                       />
-                      <ErrorMessage message={errors.batchCode} />
+                      <ErrorMessage message={errors.batchNumber} />
                     </div>
 
                     <div>
@@ -674,7 +674,7 @@ const DisplosaReq = () => {
 
                   <div className="rounded-[var(--radius-md)] bg-[var(--color-primary-dark)] p-4">
                     <span className="inline-flex rounded-full bg-[var(--color-accent)] px-2.5 py-1 text-xs font-bold text-[var(--color-primary-dark)]">
-                      {form.batchCode || "NO BATCH"}
+                      {form.batchNumber || "NO BATCH"}
                     </span>
 
                     <h3 className="mt-4 text-lg font-bold text-[var(--color-text-inverse)]">
