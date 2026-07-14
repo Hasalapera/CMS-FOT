@@ -178,7 +178,7 @@ const ADMIN_MENU_ITEMS = [
   },
   {
     label: "Audit Logs",
-    path: "/audit-logs",
+    path: "/admin/audit-logs",
     icon: ClipboardList,
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
   },

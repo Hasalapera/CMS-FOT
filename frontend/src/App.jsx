@@ -23,6 +23,7 @@ import DisposalReq from "./pages/chemicals/DisplosaReq";
 import ReturnedPage from "./pages/chemicals/ReturnedPage";
 import BatchWiseUsage from "./pages/chemicals/usage/BatchWise";
 import ChemicalWiseUsage from "./pages/chemicals/usage/ChemicalWise";
+import AuditLogsPage from "./pages/admin/AuditLogsPage";
 
 function App() {
   return (
@@ -46,8 +47,30 @@ function App() {
             path="/chemicals/deactivated"
             element={<ViewDeactivatedChemicals />}
           />
-          <Route path="/admin/users/add" element={<AddUsers />} />
-          <Route path="/admin/users/view" element={<ViewUsers />} />
+          <Route
+            path="/admin/users/add"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AddUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users/view"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <ViewUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <ProtectedRoute roles={["ADMIN", "TECHNICAL_OFFICER"]}>
+                <AuditLogsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/stock/add" element={<AddNewBatch />} />
           <Route path="/locations/add" element={<AddLocation />} />
           <Route path="/locations" element={<ViewLocations />} />

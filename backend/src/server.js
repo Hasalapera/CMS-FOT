@@ -15,10 +15,15 @@ const chemicalRoutes = require("./routes/ChemicalRoute.js");
 const locationRoutes = require("./routes/LocationRoute.js");
 const batchRoutes = require("./routes/BatchRoute.js");
 const disposeRoutes = require("./routes/DisoposeRoute.js");
+const auditLogRoutes = require("./routes/AuditLogRoute.js");
 const usageRoutes = require("./routes/UsageRoute.js");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Trust the first proxy in front of the app (e.g., Render's load balancer)
+// This is necessary to get the correct client IP address from req.ip
+app.set('trust proxy', 1);
 
 // Define a whitelist of allowed origins
 const allowedOrigins = [
@@ -61,6 +66,7 @@ app.use("/api/chemicals", chemicalRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/batches", batchRoutes);
 app.use("/api/dispose", disposeRoutes);
+app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/usage", usageRoutes);
 const startServer = async () => {
   try {

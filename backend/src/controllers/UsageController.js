@@ -2,6 +2,7 @@ const { Dispose } = require("../models/index.js");
 const { Chemical } = require("../models/index.js");
 const { Batch } = require("../models/index.js");
 const { Op } = require("sequelize");
+const { logAction } = require('../services/auditLogService.js');
 
 const retriveBatchDetails = async (req, res) => {
   try {
@@ -50,6 +51,20 @@ const calculateUsageBatchvise = async (req, res) => {
     const quantityReceived = Number(batch.quantityReceived);
     const currentQuantity = Number(batch.currentQuantity);
     const quantityUsed = quantityReceived - currentQuantity;
+
+    // Audit Log: View Batch Usage Report
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName,
+      actionType: "VIEW_BATCH_USAGE_REPORT",
+      entityType: "Batch",
+      entityId: batch.id,
+      details: {
+        batchNumber: batch.batchNumber,
+        chemicalCode: batch.chemical.chemicalCode,
+      },
+      ipAddress: req.ip,
+    });
 
     res.json({
       batchNumber: batch.batchNumber,
@@ -109,6 +124,20 @@ const calculateUsageChemicalvise = async (req, res) => {
             ? "EXPIRED"
             : "ACTIVE",
       };
+    });
+
+    // Audit Log: View Chemical Usage Report
+    await logAction({
+      userId: req.user?.id,
+      userName: req.user?.fullName,
+      actionType: "VIEW_CHEMICAL_USAGE_REPORT",
+      entityType: "Chemical",
+      entityId: chemical.id,
+      details: {
+        chemicalCode: chemical.chemicalCode,
+        chemicalName: chemical.canonicalName,
+      },
+      ipAddress: req.ip,
     });
 
     res.json({
