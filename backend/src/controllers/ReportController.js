@@ -1,4 +1,5 @@
-const { Chemical, Batch } = require("../models/index.js");
+const { Chemical, Batch, Dispose } = require("../models/index.js");
+const { Op } = require("sequelize");
 const PDFDocument = require("pdfkit");
 
 const COLOR_PRIMARY_DARK = "#0E2A20";
@@ -393,7 +394,331 @@ const downloadChemicalReport = async (req, res) => {
   }
 };
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   USAGE REPORT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const buildUsageReportData = async (startDate, endDate) => {
+  // Include end-of-day for endDate so the full day is captured
+  const endOfDay = new Date(endDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const records = await Dispose.findAll({
+    where: {
+      dateReleased: {
+        [Op.between]: [new Date(startDate), endOfDay],
+      },
+    },
+    order: [["dateReleased", "DESC"]],
+    attributes: [
+      "id",
+      "chemicalCode",
+      "chemicalName",
+      "batchNumber",
+      "quantityUsed",
+      "dateReleased",
+      "dateReturned",
+      "purpose",
+      "userName",
+      "returnedStatus",
+      "remark",
+    ],
+  });
+
+  return records.map((r) => ({
+    id: r.id,
+    chemicalCode: r.chemicalCode,
+    chemicalName: r.chemicalName,
+    batchNumber: r.batchNumber,
+    quantityUsed: r.quantityUsed !== null ? Number(r.quantityUsed) : null,
+    dateReleased: r.dateReleased,
+    dateReturned: r.dateReturned,
+    purpose: r.purpose,
+    userName: r.userName,
+    returnedStatus: r.returnedStatus,
+    remark: r.remark,
+  }));
+};
+
+const getUsageReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res
+        .status(400)
+        .json({ message: "startDate and endDate query parameters are required." });
+    }
+
+    const records = await buildUsageReportData(startDate, endDate);
+    res.json({ records });
+  } catch (error) {
+    console.error("Error building usage report:", error);
+    res.status(500).json({
+      message: "An error occurred while generating the usage report.",
+    });
+  }
+};
+
+const downloadUsageReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res
+        .status(400)
+        .json({ message: "startDate and endDate query parameters are required." });
+    }
+
+    const records = await buildUsageReportData(startDate, endDate);
+
+    const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true });
+
+    const friendlyStart = formatDate(startDate);
+    const friendlyEnd = formatDate(endDate);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="usage-report-${startDate}-to-${endDate}.pdf"`
+    );
+
+    doc.pipe(res);
+
+    const marginLeft = doc.page.margins.left;
+    const marginTop = doc.page.margins.top;
+    const pageWidth =
+      doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const rowHeight = 22;
+
+    // Column definitions — widths add up to pageWidth
+    const columns = [
+      { key: "chemicalName", label: "Chemical", width: 115 },
+      { key: "chemicalCode", label: "Code", width: 60 },
+      { key: "batchNumber", label: "Batch No.", width: 70 },
+      { key: "quantityUsed", label: "Qty Used", width: 55 },
+      { key: "purpose", label: "Purpose", width: 110 },
+      { key: "returnedStatus", label: "Status", width: 65 },
+      { key: "dateReleased", label: "Released", width: 72 },
+      {
+        key: "dateReturned",
+        label: "Returned",
+        width: pageWidth - (115 + 60 + 70 + 55 + 110 + 65 + 72),
+      },
+    ];
+
+    const statusColor = (status) => {
+      if (status === "RETURNED") return COLOR_SUCCESS;
+      if (status === "RELEASED") return COLOR_WARNING;
+      if (status === "DISPOSED") return COLOR_DANGER;
+      return COLOR_TEXT_MUTED;
+    };
+
+    // ---------- Full page-1 header ----------
+    const drawUsageFullHeader = () => {
+      const bannerHeight = 58;
+      const bannerY = marginTop;
+
+      doc.rect(marginLeft, bannerY, pageWidth, bannerHeight).fill(COLOR_PRIMARY_DARK);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(13)
+        .text("FLCMS", marginLeft + 16, bannerY + 10);
+
+      doc
+        .fillColor(COLOR_ACCENT)
+        .font("Helvetica")
+        .fontSize(7.5)
+        .text(
+          "FACULTY LABORATORY CHEMICAL MANAGEMENT SYSTEM",
+          marginLeft + 16,
+          bannerY + 26
+        );
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text("Chemical Usage Report", marginLeft + 16, bannerY + 39);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica")
+        .fontSize(8)
+        .text(
+          `Generated ${new Date().toLocaleString("en-GB")}`,
+          marginLeft,
+          bannerY + 10,
+          { width: pageWidth - 16, align: "right" }
+        );
+
+      // Date range card
+      const cardY = bannerY + bannerHeight + 16;
+      const cardHeight = 40;
+      doc
+        .rect(marginLeft, cardY, pageWidth, cardHeight)
+        .fillAndStroke("#F3F0E8", COLOR_BORDER);
+
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica-Bold")
+        .fontSize(7)
+        .text("PERIOD", marginLeft + 14, cardY + 8);
+
+      doc
+        .fillColor(COLOR_TEXT)
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .text(`${friendlyStart}  —  ${friendlyEnd}`, marginLeft + 14, cardY + 17);
+
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica-Bold")
+        .fontSize(7)
+        .text("TOTAL RECORDS", marginLeft + pageWidth * 0.55, cardY + 8);
+
+      doc
+        .fillColor(COLOR_PRIMARY)
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .text(String(records.length), marginLeft + pageWidth * 0.55, cardY + 17);
+
+      doc.y = cardY + cardHeight + 18;
+    };
+
+    // ---------- Compact running header ----------
+    const drawUsageCompactHeader = () => {
+      const bannerHeight = 28;
+      const bannerY = marginTop;
+
+      doc.rect(marginLeft, bannerY, pageWidth, bannerHeight).fill(COLOR_PRIMARY_DARK);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text(
+          `FLCMS  ·  Usage Report  (${friendlyStart} — ${friendlyEnd})`,
+          marginLeft + 14,
+          bannerY + 9,
+          { width: pageWidth * 0.7 }
+        );
+
+      doc
+        .fillColor(COLOR_ACCENT)
+        .font("Helvetica")
+        .fontSize(8)
+        .text("Chemical Usage Report (cont.)", marginLeft, bannerY + 9, {
+          width: pageWidth - 14,
+          align: "right",
+        });
+
+      doc.y = bannerY + bannerHeight + 14;
+    };
+
+    const drawUsageTableHeader = (y) => {
+      doc.rect(marginLeft, y, pageWidth, rowHeight).fill(COLOR_PRIMARY);
+      let x = marginLeft;
+      doc.fillColor("#FFFFFF").fontSize(8).font("Helvetica-Bold");
+      columns.forEach((col) => {
+        doc.text(col.label, x + 4, y + 7, { width: col.width - 8 });
+        x += col.width;
+      });
+      return y + rowHeight;
+    };
+
+    let cursorY;
+
+    doc.on("pageAdded", () => {
+      drawUsageCompactHeader();
+      cursorY = drawUsageTableHeader(doc.y);
+    });
+
+    // Page 1
+    drawUsageFullHeader();
+    cursorY = drawUsageTableHeader(doc.y);
+
+    if (records.length === 0) {
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .fontSize(9)
+        .font("Helvetica-Oblique")
+        .text(
+          "No usage records found for this period.",
+          marginLeft + 4,
+          cursorY + 10
+        );
+    }
+
+    records.forEach((record, index) => {
+      if (cursorY + rowHeight > doc.page.height - doc.page.margins.bottom - 20) {
+        doc.addPage();
+      }
+
+      if (index % 2 === 0) {
+        doc.rect(marginLeft, cursorY, pageWidth, rowHeight).fill("#F8F6F0");
+      }
+
+      const rowValues = {
+        chemicalName: record.chemicalName || "—",
+        chemicalCode: record.chemicalCode || "—",
+        batchNumber: record.batchNumber || "—",
+        quantityUsed: record.quantityUsed != null ? String(Number(record.quantityUsed).toFixed(2)) : "—",
+        purpose: record.purpose || "—",
+        returnedStatus: record.returnedStatus || "—",
+        dateReleased: formatDate(record.dateReleased),
+        dateReturned: record.dateReturned ? formatDate(record.dateReturned) : "—",
+      };
+
+      let x = marginLeft;
+      columns.forEach((col) => {
+        doc.fontSize(8);
+        doc.font(col.key === "returnedStatus" ? "Helvetica-Bold" : "Helvetica");
+        doc.fillColor(
+          col.key === "returnedStatus" ? statusColor(record.returnedStatus) : COLOR_TEXT
+        );
+        doc.text(String(rowValues[col.key]), x + 4, cursorY + 7, {
+          width: col.width - 8,
+          ellipsis: true,
+        });
+        x += col.width;
+      });
+
+      cursorY += rowHeight;
+    });
+
+    // Footer on every page
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      doc
+        .fontSize(7)
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica")
+        .text(
+          `Page ${i + 1} of ${range.count}   ·   Generated by FLCMS — Usage data for period ${friendlyStart} to ${friendlyEnd}.`,
+          marginLeft,
+          doc.page.height - doc.page.margins.bottom - 14,
+          { width: pageWidth, align: "center", lineBreak: false }
+        );
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error("Error generating usage report PDF:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        message: "An error occurred while generating the PDF report.",
+      });
+    }
+  }
+};
+
 module.exports = {
   getChemicalReport,
   downloadChemicalReport,
+  getUsageReport,
+  downloadUsageReport,
 };

@@ -8,4 +8,8 @@ router.get(
   reportController.downloadChemicalReport,
 );
 
+// Usage Report routes
+router.get("/usage", reportController.getUsageReport);
+router.get("/usage/download", reportController.downloadUsageReport);
+
 module.exports = router;
