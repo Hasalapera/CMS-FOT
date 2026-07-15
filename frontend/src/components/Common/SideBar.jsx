@@ -117,9 +117,16 @@ const MAIN_MENU_ITEMS = [
   },
   {
     label: "SDS Library",
-    path: "/sds-library",
+    pathPrefix: "/sds",
     icon: FileText,
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+    children: [
+      {
+        label: "View SDS",
+        path: "/sds/library",
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+      },
+    ]
   },
   {
     label: "Procurement & Stock",

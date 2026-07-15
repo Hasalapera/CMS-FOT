@@ -331,6 +331,35 @@ const reactivateChemical = async (req, res) => {
   }
 };
 
+const getChemicalsWithSds = async (req, res) => {
+  try {
+    const chemicals = await Chemical.findAll({
+      where: {
+        sdsStorageKey: { [Op.ne]: null },
+        isActive: true,
+      },
+      order: [['canonicalName', 'ASC']],
+      attributes: [
+        'id',
+        'chemicalCode',
+        'canonicalName',
+        'formula',
+        'sdsStorageKey',
+        'sdsOriginalFilename',
+        'sdsMimeType',
+        'sdsUploadedAt',
+      ],
+    });
+    res.status(200).json({
+      success: true,
+      chemicals,
+    });
+  } catch (error) {
+    console.error('Error fetching chemicals with SDS:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching chemicals with SDS.' });
+  }
+};
+
 const CAS_NUMBER_REGEX = /^\d{2,7}-\d{2}-\d$/;
 
 /**
@@ -656,4 +685,5 @@ module.exports = {
   getInactiveChemicals,
   reactivateChemical,
   getChemicalDataByCas,
+  getChemicalsWithSds,
 };

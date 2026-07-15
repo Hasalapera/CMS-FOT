@@ -24,7 +24,7 @@
     "db:seed:dev": "cross-env NODE_ENV=development sequelize-cli db:seed:all",
     "db:seed:test": "cross-env NODE_ENV=test sequelize-cli db:seed:all",
     "db:seed:prod": "cross-env NODE_ENV=production sequelize-cli db:seed:all",
-    "perf:health": "autocannon -c 20 -d 20 http://localhost:5000/api/health"
+    "perf:health": "autocannon -c 20 -d 20 http://localhost:5001/api/health"
   },
   "keywords": [
     "chemical-management",

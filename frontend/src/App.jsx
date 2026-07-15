@@ -27,6 +27,7 @@ import AuditLogsPage from "./pages/admin/AuditLogsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ChemicalWiseReport from "./pages/reports/ChemicalWise";
 import UsageReport from "./pages/reports/UsageReport";
+import ViewSdsLibrary from "./pages/chemicals/sds/ViewSdsLibrary";
 
 function App() {
   return (
@@ -107,6 +108,10 @@ function App() {
                 <UsageReport />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/sds/library"
+            element={<ViewSdsLibrary />}
           />
         </Route>
       </Routes>

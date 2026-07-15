@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Loader2,
@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   FileText,
   Download,
+  Eye,
   Pencil,
   Trash2,
   Tag,
@@ -16,8 +17,7 @@ import {
 import api from '../../api/axiosInstance';
 import EditChemicalModal from '../../components/chemicals/EditChemicalModal';
 import DeleteConfirmationModal from '../../components/Common/DeleteConfirmationModal';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import { getSdsUrl } from '../../utils/sds';
 
 const DetailItem = ({ label, value, children }) => {
   if (!value && !children) {
@@ -116,7 +116,7 @@ const ChemicalDetails = () => {
 
   if (!chemical) return null;
 
-  const sdsUrl = chemical.sdsStorageKey ? `${API_BASE_URL}/uploads/sds/${chemical.sdsStorageKey}` : null;
+  const sdsUrl = getSdsUrl(chemical.sdsStorageKey);
 
   return (
     <>
@@ -244,10 +244,21 @@ const ChemicalDetails = () => {
                   <div className="p-4 sm:p-5">
                     {sdsUrl ? (
                       <div>
-                        <a href={sdsUrl} download={chemical.sdsOriginalFilename} target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-primary)] bg-[var(--color-primary-tint)] px-4 py-3 text-sm font-bold text-[var(--color-primary)] color-transition hover:bg-[var(--color-primary)] hover:text-[var(--color-text-inverse)]">
-                          <Download size={18} />
-                          Download SDS ({ (chemical.sdsFileSize / 1024 / 1024).toFixed(2) } MB)
-                        </a>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <a href={sdsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-primary)] bg-[var(--color-primary-tint)] px-4 py-3 text-sm font-bold text-[var(--color-primary)] color-transition hover:bg-[var(--color-primary)] hover:text-[var(--color-text-inverse)]">
+                            <Eye size={18} />
+                            Preview SDS
+                          </a>
+                          <a href={sdsUrl} download={chemical.sdsOriginalFilename} className="inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-4 py-3 text-sm font-bold text-[var(--color-text-inverse)] color-transition hover:bg-[var(--color-primary-light)]">
+                            <Download size={18} />
+                            Download
+                          </a>
+                        </div>
+                        {chemical.sdsFileSize && (
+                          <p className="mt-2 text-center text-xs text-[var(--color-text-muted)]">
+                            {(chemical.sdsFileSize / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
                         <p className="mt-2 truncate text-center text-xs text-[var(--color-text-muted)]">{chemical.sdsOriginalFilename}</p>
                       </div>
                     ) : (
