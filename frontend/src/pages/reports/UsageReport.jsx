@@ -164,7 +164,7 @@ const UsageReport = () => {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Unable to load usage records. Please try again."
+          "Unable to load usage records. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -195,6 +195,7 @@ const UsageReport = () => {
           r.chemicalCode?.toLowerCase().includes(term) ||
           r.chemicalName?.toLowerCase().includes(term) ||
           r.batchNumber?.toLowerCase().includes(term) ||
+          r.stuRegisterNum?.toLowerCase().includes(term) ||
           r.purpose?.toLowerCase().includes(term);
         return matchStatus && matchSearch;
       })
@@ -216,19 +217,19 @@ const UsageReport = () => {
 
   const totalUsage = useMemo(
     () => filtered.reduce((s, r) => s + Number(r.quantityUsed || 0), 0),
-    [filtered]
+    [filtered],
   );
   const returnedCount = useMemo(
     () => filtered.filter((r) => r.returnedStatus === "RETURNED").length,
-    [filtered]
+    [filtered],
   );
   const releasedCount = useMemo(
     () => filtered.filter((r) => r.returnedStatus === "RELEASED").length,
-    [filtered]
+    [filtered],
   );
   const uniqueChemicals = useMemo(
     () => new Set(filtered.map((r) => r.chemicalCode)).size,
-    [filtered]
+    [filtered],
   );
 
   const handleDownload = async () => {
@@ -241,7 +242,7 @@ const UsageReport = () => {
         responseType: "blob",
       });
       const blobUrl = window.URL.createObjectURL(
-        new Blob([response.data], { type: "application/pdf" })
+        new Blob([response.data], { type: "application/pdf" }),
       );
       const link = document.createElement("a");
       link.href = blobUrl;
@@ -268,7 +269,6 @@ const UsageReport = () => {
     <div className="min-h-screen bg-[var(--color-bg)]">
       <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
         <div className="mx-auto max-w-7xl">
-
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <header className="mb-6 overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-primary-dark)] shadow-[var(--shadow-md)]">
             <div className="relative p-5 sm:p-7 lg:p-8">
@@ -616,6 +616,13 @@ const UsageReport = () => {
                         onSort={handleSort}
                       />
                       <SortHeader
+                        label="Reg.No"
+                        field="stuRegisterNum"
+                        sortField={sortField}
+                        sortDir={sortDir}
+                        onSort={handleSort}
+                      />
+                      <SortHeader
                         label="Qty Used"
                         field="quantityUsed"
                         sortField={sortField}
@@ -656,7 +663,9 @@ const UsageReport = () => {
                       <tr
                         key={record.id || idx}
                         className={`border-b border-[var(--color-border)] transition-colors hover:bg-[var(--color-primary-tint)]/40 last:border-b-0 ${
-                          idx % 2 === 0 ? "" : "bg-[var(--color-surface-muted)]/40"
+                          idx % 2 === 0
+                            ? ""
+                            : "bg-[var(--color-surface-muted)]/40"
                         }`}
                       >
                         {/* Chemical Name */}
@@ -685,11 +694,18 @@ const UsageReport = () => {
                           </span>
                         </td>
 
+                        {/* Reg. No */}
+                        <td className="px-3 py-3">
+                          <span className="rounded-md bg-[var(--color-surface-muted)] px-2 py-1 text-[11px] font-bold text-[var(--color-text-secondary)]">
+                            {record.stuRegisterNum || "—"}
+                          </span>
+                        </td>
+
                         {/* Quantity Used */}
                         <td className="px-3 py-3">
                           <span className="font-bold text-[var(--color-text-primary)]">
                             {record.quantityUsed != null
-                              ? Number(record.quantityUsed).toFixed(2)
+                              ? `${Number(record.quantityUsed).toFixed(2)}${record.baseUnit || ""}`
                               : "—"}
                           </span>
                         </td>
@@ -712,7 +728,10 @@ const UsageReport = () => {
                         {/* Date Released */}
                         <td className="px-3 py-3">
                           <span className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
-                            <Calendar size={11} className="shrink-0 text-[var(--color-text-muted)]" />
+                            <Calendar
+                              size={11}
+                              className="shrink-0 text-[var(--color-text-muted)]"
+                            />
                             {formatDateTime(record.dateReleased)}
                           </span>
                         </td>

@@ -405,6 +405,13 @@ const buildUsageReportData = async (startDate, endDate) => {
         [Op.between]: [new Date(startDate), endOfDay],
       },
     },
+    include: [
+      {
+        model: Chemical,
+        as: "chemical",
+        attributes: ["baseUnit"],
+      },
+    ],
     order: [["dateReleased", "DESC"]],
     attributes: [
       "id",
@@ -416,6 +423,7 @@ const buildUsageReportData = async (startDate, endDate) => {
       "dateReturned",
       "purpose",
       "userName",
+      "stuRegisterNum",
       "returnedStatus",
       "remark",
     ],
@@ -427,10 +435,12 @@ const buildUsageReportData = async (startDate, endDate) => {
     chemicalName: r.chemicalName,
     batchNumber: r.batchNumber,
     quantityUsed: r.quantityUsed !== null ? Number(r.quantityUsed) : null,
+    baseUnit: r.chemical ? r.chemical.baseUnit : "",
     dateReleased: r.dateReleased,
     dateReturned: r.dateReturned,
     purpose: r.purpose,
     userName: r.userName,
+    stuRegisterNum: r.stuRegisterNum,
     returnedStatus: r.returnedStatus,
     remark: r.remark,
   }));
@@ -468,7 +478,7 @@ const downloadUsageReport = async (req, res) => {
 
     const records = await buildUsageReportData(startDate, endDate);
 
-    const doc = new PDFDocument({ size: "A4", margin: 30, bufferPages: true });
+    const doc = new PDFDocument({ size: "A4", margin: 20, bufferPages: true });
 
     const friendlyStart = formatDate(startDate);
     const friendlyEnd = formatDate(endDate);
@@ -489,17 +499,17 @@ const downloadUsageReport = async (req, res) => {
 
     // Column definitions — widths add up to pageWidth
     const columns = [
-      { key: "chemicalName", label: "Chemical", width: 95 },
-      { key: "chemicalCode", label: "Code", width: 65 },
-      { key: "batchNumber", label: "Batch No.", width: 65 },
-      { key: "quantityUsed", label: "Qty Used", width: 45 },
-      { key: "purpose", label: "Purpose", width: 80 },
+      { key: "chemicalName", label: "Chemical", width: 110 },
+      { key: "chemicalCode", label: "Code", width: 60 },
+      { key: "batchNumber", label: "Batch No.", width: 60 },
+      { key: "stuRegisterNum", label: "Reg.No", width: 85 },
+      { key: "quantityUsed", label: "Qty Used", width: 48 },
       { key: "returnedStatus", label: "Status", width: 60 },
       { key: "dateReleased", label: "Released", width: 65 },
       {
         key: "dateReturned",
         label: "Returned",
-        width: pageWidth - (95 + 65 + 65 + 45 + 80 + 60 + 65),
+        width: pageWidth - (110 + 60 + 60 + 85 + 48 + 60 + 65),
       },
     ];
 
@@ -661,8 +671,9 @@ const downloadUsageReport = async (req, res) => {
         chemicalName: record.chemicalName || "—",
         chemicalCode: record.chemicalCode || "—",
         batchNumber: record.batchNumber || "—",
-        quantityUsed: record.quantityUsed != null ? String(Number(record.quantityUsed).toFixed(2)) : "—",
-        purpose: record.purpose || "—",
+        stuRegisterNum: record.stuRegisterNum || "—",
+        quantityUsed: record.quantityUsed != null ? `${Number(record.quantityUsed).toFixed(2)}${record.baseUnit || ""}` : "—",
+        // purpose: record.purpose || "—",
         returnedStatus: record.returnedStatus || "—",
         dateReleased: formatDate(record.dateReleased),
         dateReturned: record.dateReturned ? formatDate(record.dateReturned) : "—",

@@ -9,6 +9,7 @@ const createreleaserecord = async (req, res) => {
   const {
     chemicalCode,
     stuRegisterNum,
+    userName,
     batchNumber,
     dateReleased,
     purpose,
@@ -19,7 +20,8 @@ const createreleaserecord = async (req, res) => {
     !batchNumber ||
     !dateReleased ||
     !purpose ||
-    !stuRegisterNum
+    !stuRegisterNum ||
+    !userName
   ) {
     return res.status(400).json({ message: "All fields are required" });
   }
@@ -43,7 +45,7 @@ const createreleaserecord = async (req, res) => {
       dateReleased: dateReleased,
       purpose: purpose,
       stuRegisterNum: stuRegisterNum,
-      userName: req.user.fullName, // From verifyToken middleware
+      userName: userName,
       remark: remark,
     });
 
