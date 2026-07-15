@@ -69,16 +69,6 @@ Chemical.hasMany(Dispose, {
   as: "disposals",
 });
 
-// 6. Dispose <-> User
-Dispose.belongsTo(User, {
-  foreignKey: "userId",
-  as: "requestingUser",
-});
-User.hasMany(Dispose, {
-  foreignKey: "userId",
-  as: "disposalRequests",
-});
-
 // 7. AuditLog <-> User
 AuditLog.belongsTo(User, {
   foreignKey: "userId",
