@@ -25,7 +25,7 @@ const {
 } = require("./services/notificationService.js");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Trust the first proxy in front of the app (e.g., Render's load balancer)
 // This is necessary to get the correct client IP address from req.ip
@@ -61,7 +61,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Serve uploaded files statically
+// Serve uploaded files statically. Multer stores files in backend/uploads.
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/", (req, res) => {
