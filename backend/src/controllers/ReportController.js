@@ -468,7 +468,7 @@ const downloadUsageReport = async (req, res) => {
 
     const records = await buildUsageReportData(startDate, endDate);
 
-    const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true });
+    const doc = new PDFDocument({ size: "A4", margin: 30, bufferPages: true });
 
     const friendlyStart = formatDate(startDate);
     const friendlyEnd = formatDate(endDate);
@@ -485,21 +485,21 @@ const downloadUsageReport = async (req, res) => {
     const marginTop = doc.page.margins.top;
     const pageWidth =
       doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const rowHeight = 22;
+    const rowHeight = 24;
 
     // Column definitions — widths add up to pageWidth
     const columns = [
-      { key: "chemicalName", label: "Chemical", width: 115 },
-      { key: "chemicalCode", label: "Code", width: 60 },
-      { key: "batchNumber", label: "Batch No.", width: 70 },
-      { key: "quantityUsed", label: "Qty Used", width: 55 },
-      { key: "purpose", label: "Purpose", width: 110 },
-      { key: "returnedStatus", label: "Status", width: 65 },
-      { key: "dateReleased", label: "Released", width: 72 },
+      { key: "chemicalName", label: "Chemical", width: 95 },
+      { key: "chemicalCode", label: "Code", width: 65 },
+      { key: "batchNumber", label: "Batch No.", width: 65 },
+      { key: "quantityUsed", label: "Qty Used", width: 45 },
+      { key: "purpose", label: "Purpose", width: 80 },
+      { key: "returnedStatus", label: "Status", width: 60 },
+      { key: "dateReleased", label: "Released", width: 65 },
       {
         key: "dateReturned",
         label: "Returned",
-        width: pageWidth - (115 + 60 + 70 + 55 + 110 + 65 + 72),
+        width: pageWidth - (95 + 65 + 65 + 45 + 80 + 60 + 65),
       },
     ];
 
@@ -619,7 +619,7 @@ const downloadUsageReport = async (req, res) => {
       let x = marginLeft;
       doc.fillColor("#FFFFFF").fontSize(8).font("Helvetica-Bold");
       columns.forEach((col) => {
-        doc.text(col.label, x + 4, y + 7, { width: col.width - 8 });
+        doc.text(col.label, x + 4, y + 8, { width: col.width - 8 });
         x += col.width;
       });
       return y + rowHeight;
@@ -675,7 +675,7 @@ const downloadUsageReport = async (req, res) => {
         doc.fillColor(
           col.key === "returnedStatus" ? statusColor(record.returnedStatus) : COLOR_TEXT
         );
-        doc.text(String(rowValues[col.key]), x + 4, cursorY + 7, {
+        doc.text(String(rowValues[col.key]), x + 4, cursorY + 8, {
           width: col.width - 8,
           ellipsis: true,
         });
