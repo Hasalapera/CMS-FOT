@@ -25,6 +25,8 @@ import BatchWiseUsage from "./pages/chemicals/usage/BatchWise";
 import ChemicalWiseUsage from "./pages/chemicals/usage/ChemicalWise";
 import AuditLogsPage from "./pages/admin/AuditLogsPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import ChemicalWiseReport from "./pages/reports/ChemicalWise";
+import UsageReport from "./pages/reports/UsageReport";
 
 function App() {
   return (
@@ -87,6 +89,22 @@ function App() {
             element={
               <ProtectedRoute roles={["ADMIN", "TECHNICAL_OFFICER"]}>
                 <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/chemicalwise"
+            element={
+              <ProtectedRoute roles={["ADMIN", "TECHNICAL_OFFICER"]}>
+                <ChemicalWiseReport />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/usage"
+            element={
+              <ProtectedRoute roles={["ADMIN", "TECHNICAL_OFFICER"]}>
+                <UsageReport />
               </ProtectedRoute>
             }
           />

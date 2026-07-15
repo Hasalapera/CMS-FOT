@@ -147,9 +147,21 @@ const MAIN_MENU_ITEMS = [
   },
   {
     label: "Reports",
-    path: "/reports",
     icon: ChartNoAxesCombined,
+    pathPrefix: "/reports",
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
+    children: [
+      {
+        label: "Chemical Status Report",
+        path: "/reports/chemicalwise",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+      {
+        label: "Usage Report",
+        path: "/reports/usage",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+    ],
   },
 ];
 
@@ -491,7 +503,8 @@ const Sidebar = () => {
     queryKey: ["notificationCount"],
     queryFn: () => api.get("/notifications/count"),
     select: (res) => res.data.count,
-    enabled: !!user && (user.role === "ADMIN" || user.role === "TECHNICAL_OFFICER"),
+    enabled:
+      !!user && (user.role === "ADMIN" || user.role === "TECHNICAL_OFFICER"),
     refetchInterval: 60000, // Refetch every 60 seconds
   });
 
