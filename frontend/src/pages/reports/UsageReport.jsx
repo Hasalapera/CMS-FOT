@@ -146,7 +146,6 @@ const UsageReport = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
 
-  /* fetch ------------------------------------------------------------------ */
   const fetchRecords = useCallback(async () => {
     if (!startDate || !endDate) return;
     if (new Date(startDate) > new Date(endDate)) {
@@ -174,10 +173,8 @@ const UsageReport = () => {
 
   useEffect(() => {
     fetchRecords();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* sort ------------------------------------------------------------------- */
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -187,7 +184,6 @@ const UsageReport = () => {
     }
   };
 
-  /* filter + sort ---------------------------------------------------------- */
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return records
@@ -218,7 +214,6 @@ const UsageReport = () => {
       });
   }, [records, search, statusFilter, sortField, sortDir]);
 
-  /* stats ------------------------------------------------------------------ */
   const totalUsage = useMemo(
     () => filtered.reduce((s, r) => s + Number(r.quantityUsed || 0), 0),
     [filtered]
@@ -236,7 +231,6 @@ const UsageReport = () => {
     [filtered]
   );
 
-  /* download --------------------------------------------------------------- */
   const handleDownload = async () => {
     if (!hasSearched) return;
     try {
@@ -263,7 +257,6 @@ const UsageReport = () => {
     }
   };
 
-  /* reset ------------------------------------------------------------------ */
   const handleReset = () => {
     setStartDate(toInputDate(thirtyDaysAgo));
     setEndDate(toInputDate(today));
@@ -271,7 +264,6 @@ const UsageReport = () => {
     setStatusFilter("ALL");
   };
 
-  /* ─── JSX ─────────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
