@@ -8,12 +8,19 @@ const { notifyLowStockBatch } = require("../services/notificationService.js");
 const createreleaserecord = async (req, res) => {
   const {
     chemicalCode,
+    stuRegisterNum,
     batchNumber,
     dateReleased,
     purpose,
     remark,
   } = req.body;
-  if (!chemicalCode || !batchNumber || !dateReleased || !purpose) {
+  if (
+    !chemicalCode ||
+    !batchNumber ||
+    !dateReleased ||
+    !purpose ||
+    !stuRegisterNum
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
@@ -35,7 +42,7 @@ const createreleaserecord = async (req, res) => {
       batchNumber: batchNumber,
       dateReleased: dateReleased,
       purpose: purpose,
-      userId: req.user.id,       // From verifyToken middleware
+      stuRegisterNum: stuRegisterNum,
       userName: req.user.fullName, // From verifyToken middleware
       remark: remark,
     });
@@ -226,10 +233,7 @@ const getbatchbychemicalid = async (req, res) => {
     const batches = await Batch.findAll({
       where: {
         chemicalId: chemical.id,
-        [Op.or]: [
-          { expiryDate: null }, 
-          { expiryDate: { [Op.gte]: today } },
-        ],
+        [Op.or]: [{ expiryDate: null }, { expiryDate: { [Op.gte]: today } }],
       },
       attributes: ["batchNumber", "expiryDate", "currentQuantity"],
       include: [
