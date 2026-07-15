@@ -712,9 +712,332 @@ const downloadUsageReport = async (req, res) => {
   }
 };
 
+const downloadFullInventoryReport = async (req, res) => {
+  try {
+    const chemicals = await Chemical.findAll({
+      attributes: [
+        "id",
+        "chemicalCode",
+        "canonicalName",
+        "baseUnit",
+        "stockDimension",
+        "casNumber",
+      ],
+      include: [
+        {
+          model: Batch,
+          as: "batches",
+        },
+      ],
+      order: [
+        ["canonicalName", "ASC"],
+        [{ model: Batch, as: "batches" }, "receivedDate", "DESC"],
+      ],
+    });
+
+    const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="full-inventory-report.pdf"'
+    );
+
+    doc.pipe(res);
+
+    const marginLeft = doc.page.margins.left;
+    const marginTop = doc.page.margins.top;
+    const pageWidth =
+      doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const rowHeight = 20;
+
+    const columns = [
+      { key: "batchNumber", label: "Batch No.", width: 90 },
+      { key: "receivedDate", label: "Received Date", width: 75 },
+      { key: "expiryDate", label: "Expiry Date", width: 75 },
+      { key: "quantityReceived", label: "Start Qty", width: 75 },
+      { key: "currentQuantity", label: "Remaining Qty", width: 75 },
+      { key: "daysRemaining", label: "Days Left", width: pageWidth - 390 },
+    ];
+
+    // Banner draw helper
+    const drawInventoryFullHeader = () => {
+      const bannerHeight = 58;
+      const bannerY = marginTop;
+
+      doc.rect(marginLeft, bannerY, pageWidth, bannerHeight).fill(COLOR_PRIMARY_DARK);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(13)
+        .text("FLCMS", marginLeft + 16, bannerY + 10);
+
+      doc
+        .fillColor(COLOR_ACCENT)
+        .font("Helvetica")
+        .fontSize(7.5)
+        .text(
+          "FACULTY LABORATORY CHEMICAL MANAGEMENT SYSTEM",
+          marginLeft + 16,
+          bannerY + 26
+        );
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text("Full Inventory Status Report", marginLeft + 16, bannerY + 39);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica")
+        .fontSize(8)
+        .text(
+          `Generated ${new Date().toLocaleString("en-GB")}`,
+          marginLeft,
+          bannerY + 10,
+          { width: pageWidth - 16, align: "right" }
+        );
+
+      // Inventory Summary Card
+      const cardY = bannerY + bannerHeight + 16;
+      const cardHeight = 40;
+      doc
+        .rect(marginLeft, cardY, pageWidth, cardHeight)
+        .fillAndStroke("#F3F0E8", COLOR_BORDER);
+
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica-Bold")
+        .fontSize(7)
+        .text("TOTAL UNIQUE CHEMICALS", marginLeft + 14, cardY + 8);
+
+      doc
+        .fillColor(COLOR_TEXT)
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .text(String(chemicals.length), marginLeft + 14, cardY + 17);
+
+      // Count batches
+      let totalBatches = 0;
+      chemicals.forEach((c) => {
+        if (c.batches) totalBatches += c.batches.length;
+      });
+
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica-Bold")
+        .fontSize(7)
+        .text("TOTAL BATCHES IN SYSTEM", marginLeft + pageWidth * 0.5, cardY + 8);
+
+      doc
+        .fillColor(COLOR_PRIMARY)
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .text(String(totalBatches), marginLeft + pageWidth * 0.5, cardY + 17);
+
+      doc.y = cardY + cardHeight + 20;
+    };
+
+    const drawInventoryCompactHeader = () => {
+      const bannerHeight = 28;
+      const bannerY = marginTop;
+
+      doc.rect(marginLeft, bannerY, pageWidth, bannerHeight).fill(COLOR_PRIMARY_DARK);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text(
+          "FLCMS  ·  Full Inventory Status Report",
+          marginLeft + 14,
+          bannerY + 9,
+          { width: pageWidth * 0.7 }
+        );
+
+      doc
+        .fillColor(COLOR_ACCENT)
+        .font("Helvetica")
+        .fontSize(8)
+        .text("Chemical Inventory (cont.)", marginLeft, bannerY + 9, {
+          width: pageWidth - 14,
+          align: "right",
+        });
+
+      doc.y = bannerY + bannerHeight + 14;
+    };
+
+    // Compact running header setup
+    doc.on("pageAdded", () => {
+      drawInventoryCompactHeader();
+    });
+
+    drawInventoryFullHeader();
+
+    let cursorY = doc.y;
+
+    chemicals.forEach((chemical) => {
+      // Calculate sum of remaining quantity
+      const totalRemaining = (chemical.batches || []).reduce(
+        (sum, b) => sum + Number(b.currentQuantity || 0),
+        0
+      );
+
+      // Estimate the height of this chemical block
+      // Header height: ~45pt. Each batch row: 20pt. Space below: 15pt.
+      const batchCount = chemical.batches ? chemical.batches.length : 0;
+      const estimatedHeight = 45 + (batchCount > 0 ? (batchCount + 1) * rowHeight : 20) + 15;
+
+      if (cursorY + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        cursorY = doc.y;
+      }
+
+      // Draw Chemical Card Section Header
+      doc.rect(marginLeft, cursorY, pageWidth, 28).fill("#E7EFEA");
+      doc.rect(marginLeft, cursorY, pageWidth, 28).stroke(COLOR_BORDER);
+
+      // Chemical canonicalName + code
+      doc
+        .fillColor(COLOR_PRIMARY_DARK)
+        .font("Helvetica-Bold")
+        .fontSize(9.5)
+        .text(`${chemical.canonicalName} (${chemical.chemicalCode})`, marginLeft + 10, cursorY + 9, {
+          width: pageWidth * 0.65,
+          ellipsis: true,
+        });
+
+      // Total Available/Remaining Qty on the right
+      doc
+        .fillColor(COLOR_TEXT)
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text(
+          `Total Qty: ${totalRemaining.toFixed(2)} ${chemical.baseUnit}`,
+          marginLeft,
+          cursorY + 9,
+          { width: pageWidth - 10, align: "right" }
+        );
+
+      cursorY += 28;
+
+      if (!chemical.batches || chemical.batches.length === 0) {
+        // No batches details
+        cursorY += 6;
+        doc
+          .fillColor(COLOR_TEXT_MUTED)
+          .font("Helvetica-Oblique")
+          .fontSize(8.5)
+          .text("No batch details in the system", marginLeft + 10, cursorY);
+        cursorY += 15;
+      } else {
+        // Draw Batch Table Headers
+        cursorY += 6;
+        doc.rect(marginLeft, cursorY, pageWidth, rowHeight).fill(COLOR_PRIMARY);
+        let tx = marginLeft;
+        doc.fillColor("#FFFFFF").fontSize(7.5).font("Helvetica-Bold");
+        columns.forEach((col) => {
+          doc.text(col.label, tx + 4, cursorY + 6, { width: col.width - 8 });
+          tx += col.width;
+        });
+
+        cursorY += rowHeight;
+
+        // Draw Batch Rows
+        chemical.batches.forEach((batch, bIdx) => {
+          if (bIdx % 2 === 1) {
+            doc.rect(marginLeft, cursorY, pageWidth, rowHeight).fill("#F8F6F0");
+          }
+
+          const daysLeft = getDaysRemaining(batch.expiryDate);
+          let friendlyDaysLeft = "—";
+          if (daysLeft !== null) {
+            if (daysLeft < 0) {
+              friendlyDaysLeft = `Expired (${Math.abs(daysLeft)} days)`;
+            } else if (daysLeft === 0) {
+              friendlyDaysLeft = "Expires today";
+            } else {
+              friendlyDaysLeft = `${daysLeft} days`;
+            }
+          }
+
+          const rowValues = {
+            batchNumber: batch.batchNumber,
+            receivedDate: formatDate(batch.receivedDate),
+            expiryDate: formatDate(batch.expiryDate),
+            quantityReceived: `${Number(batch.quantityReceived).toFixed(2)} ${chemical.baseUnit}`,
+            currentQuantity: `${Number(batch.currentQuantity).toFixed(2)} ${chemical.baseUnit}`,
+            daysRemaining: friendlyDaysLeft,
+          };
+
+          let bx = marginLeft;
+          columns.forEach((col) => {
+            doc.fontSize(7.5);
+            doc.font("Helvetica");
+
+            // Set alert colors for days left
+            if (col.key === "daysRemaining" && daysLeft !== null) {
+              if (daysLeft < 0) {
+                doc.fillColor(COLOR_DANGER).font("Helvetica-Bold");
+              } else if (daysLeft <= 30) {
+                doc.fillColor(COLOR_WARNING).font("Helvetica-Bold");
+              } else {
+                doc.fillColor(COLOR_SUCCESS).font("Helvetica-Bold");
+              }
+            } else {
+              doc.fillColor(COLOR_TEXT);
+            }
+
+            doc.text(String(rowValues[col.key]), bx + 4, cursorY + 6, {
+              width: col.width - 8,
+              ellipsis: true,
+            });
+            bx += col.width;
+          });
+
+          cursorY += rowHeight;
+        });
+
+        cursorY += 10; // separation space between chemicals
+      }
+
+      // Sync doc.y
+      doc.y = cursorY;
+    });
+
+    // Add Page Number Footer dynamically
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      doc
+        .fontSize(7)
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica")
+        .text(
+          `Page ${i + 1} of ${range.count}   ·   FLCMS — Faculty Laboratory Chemical Management System`,
+          marginLeft,
+          doc.page.height - doc.page.margins.bottom - 14,
+          { width: pageWidth, align: "center", lineBreak: false }
+        );
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error("Error generating full inventory report:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        message: "An error occurred while generating the full inventory report.",
+      });
+    }
+  }
+};
+
 module.exports = {
   getChemicalReport,
   downloadChemicalReport,
   getUsageReport,
   downloadUsageReport,
+  downloadFullInventoryReport,
 };

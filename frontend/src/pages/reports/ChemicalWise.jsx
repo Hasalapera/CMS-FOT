@@ -43,7 +43,8 @@ const getExpiryInfo = (expiryDate) => {
   );
 
   if (daysLeft < 0) {
-    return { label: "Expired", tone: "danger", daysLeft };
+    const absDays = Math.abs(daysLeft);
+    return { label: `Expired (${absDays} day${absDays === 1 ? "" : "s"})`, tone: "danger", daysLeft };
   }
   if (daysLeft <= 30) {
     return {
@@ -178,6 +179,9 @@ const ChemicalWise = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
 
+  const [isDownloadingFull, setIsDownloadingFull] = useState(false);
+  const [fullDownloadError, setFullDownloadError] = useState("");
+
   const fetchChemicals = async () => {
     try {
       setIsListLoading(true);
@@ -245,6 +249,30 @@ const ChemicalWise = () => {
     }
   };
 
+  const handleDownloadFullReport = async () => {
+    try {
+      setIsDownloadingFull(true);
+      setFullDownloadError("");
+      const response = await api.get("/reports/inventory/download", {
+        responseType: "blob",
+      });
+      const blobUrl = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `full-inventory-report.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      setFullDownloadError("Unable to generate the full status report. Please try again.");
+    } finally {
+      setIsDownloadingFull(false);
+    }
+  };
+
   const filteredChemicals = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return chemicals;
@@ -283,14 +311,35 @@ const ChemicalWise = () => {
               <div className="pointer-events-none absolute -bottom-20 right-32 h-40 w-40 rounded-full bg-[var(--color-accent)] opacity-10" />
 
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="mb-5 inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-primary-light)] bg-[var(--color-primary)] px-3 py-2 text-sm font-semibold text-[var(--color-text-inverse)] color-transition hover:bg-[var(--color-primary-light)]"
-                >
-                  <ArrowLeft size={17} />
-                  Back
-                </button>
+                <div className="flex items-center justify-between gap-4 mb-5">
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-primary-light)] bg-[var(--color-primary)] px-3 py-2 text-sm font-semibold text-[var(--color-text-inverse)] color-transition hover:bg-[var(--color-primary-light)]"
+                  >
+                    <ArrowLeft size={17} />
+                    Back
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadFullReport}
+                    disabled={isDownloadingFull}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 py-2 text-sm font-bold text-[var(--color-primary-dark)] shadow-[var(--shadow-sm)] color-transition hover:bg-[var(--color-accent-light)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isDownloadingFull ? (
+                      <>
+                        <Loader2 size={15} className="animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download size={15} />
+                        Full Status Report
+                      </>
+                    )}
+                  </button>
+                </div>
 
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                   <div className="max-w-3xl">
@@ -328,6 +377,13 @@ const ChemicalWise = () => {
               </div>
             </div>
           </header>
+
+          {fullDownloadError && (
+            <div className="mb-6 flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)]">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[var(--color-danger)]" />
+              <p className="text-sm font-semibold text-[var(--color-danger)]">{fullDownloadError}</p>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
             {/* Left: chemical list */}

@@ -161,11 +161,6 @@ const MAIN_MENU_ITEMS = [
         path: "/reports/usage",
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
-      {
-        label: "Disposal Report",
-        path: "/reports/disposal",
-        roles: ["ADMIN", "TECHNICAL_OFFICER"],
-      },
     ],
   },
 ];
