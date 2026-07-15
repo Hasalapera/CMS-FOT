@@ -1,0 +1,399 @@
+const { Chemical, Batch } = require("../models/index.js");
+const PDFDocument = require("pdfkit");
+
+const COLOR_PRIMARY_DARK = "#0E2A20";
+const COLOR_PRIMARY = "#1B4332";
+const COLOR_ACCENT = "#B8873A";
+const COLOR_TEXT = "#1B211D";
+const COLOR_TEXT_MUTED = "#5B6660";
+const COLOR_BORDER = "#E4E0D3";
+const COLOR_DANGER = "#D6483F";
+const COLOR_WARNING = "#D9822B";
+const COLOR_SUCCESS = "#1E8A5A";
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+};
+
+const getDaysRemaining = (expiryDate) => {
+  if (!expiryDate) return null;
+  const expiry = new Date(expiryDate);
+  if (Number.isNaN(expiry.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.floor(
+    (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+};
+
+const getExpiryStatus = (expiryDate) => {
+  const daysRemaining = getDaysRemaining(expiryDate);
+  if (daysRemaining === null) return "NO EXPIRY";
+  if (daysRemaining < 0) return "EXPIRED";
+  if (daysRemaining <= 30) return "EXPIRING SOON";
+  return "ACTIVE";
+};
+
+const buildChemicalReportData = async (chemicalCode) => {
+  const chemical = await Chemical.findOne({
+    where: { chemicalCode },
+    attributes: [
+      "id",
+      "chemicalCode",
+      "canonicalName",
+      "baseUnit",
+      "stockDimension",
+      "casNumber",
+    ],
+  });
+
+  if (!chemical) {
+    return null;
+  }
+
+  const batches = await Batch.findAll({
+    where: { chemicalId: chemical.id },
+    order: [["receivedDate", "DESC"]],
+  });
+
+  const formattedBatches = batches.map((batch) => {
+    const quantityReceived = Number(batch.quantityReceived);
+    const currentQuantity = Number(batch.currentQuantity);
+
+    return {
+      batchNumber: batch.batchNumber,
+      receivedDate: batch.receivedDate,
+      expiryDate: batch.expiryDate,
+      quantityReceived,
+      currentQuantity,
+      quantityUsed: quantityReceived - currentQuantity,
+      supplier: batch.supplier,
+      daysRemaining: getDaysRemaining(batch.expiryDate),
+      status: getExpiryStatus(batch.expiryDate),
+    };
+  });
+
+  return {
+    chemicalCode: chemical.chemicalCode,
+    canonicalName: chemical.canonicalName,
+    baseUnit: chemical.baseUnit,
+    stockDimension: chemical.stockDimension,
+    casNumber: chemical.casNumber,
+    batches: formattedBatches,
+  };
+};
+const getChemicalReport = async (req, res) => {
+  try {
+    const { chemicalCode } = req.params;
+
+    const data = await buildChemicalReportData(chemicalCode);
+
+    if (!data) {
+      return res.status(404).json({ message: "Chemical not found." });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error building chemical report:", error);
+    res.status(500).json({
+      message: "An error occurred while generating the report.",
+    });
+  }
+};
+
+const downloadChemicalReport = async (req, res) => {
+  try {
+    const { chemicalCode } = req.params;
+
+    const data = await buildChemicalReportData(chemicalCode);
+
+    if (!data) {
+      return res.status(404).json({ message: "Chemical not found." });
+    }
+
+    // bufferPages lets us go back and stamp "Page X of Y" on every page
+    // once we know the final page count.
+    const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${data.chemicalCode}-stock-report.pdf"`,
+    );
+
+    doc.pipe(res);
+
+    const marginLeft = doc.page.margins.left;
+    const marginTop = doc.page.margins.top;
+    const pageWidth =
+      doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const rowHeight = 22;
+
+    const columns = [
+      { key: "batchNumber", label: "Batch No.", width: 68 },
+      { key: "receivedDate", label: "Received", width: 62 },
+      { key: "expiryDate", label: "Expiry", width: 62 },
+      { key: "quantityReceived", label: "Start Qty", width: 60 },
+      { key: "currentQuantity", label: "Current Qty", width: 65 },
+      { key: "daysRemaining", label: "Days Left", width: 55 },
+      { key: "status", label: "Status", width: 78 },
+      {
+        key: "supplier",
+        label: "Supplier",
+        width: pageWidth - (68 + 62 + 62 + 60 + 65 + 55 + 78),
+      },
+    ];
+
+    const statusColor = (status) => {
+      if (status === "EXPIRED") return COLOR_DANGER;
+      if (status === "EXPIRING SOON") return COLOR_WARNING;
+      if (status === "ACTIVE") return COLOR_SUCCESS;
+      return COLOR_TEXT_MUTED;
+    };
+
+    /**
+     * Full header — brand banner + chemical identity card. Only drawn
+     * once, at the very top of page 1.
+     */
+    const drawFullHeader = () => {
+      const bannerHeight = 58;
+      const bannerY = marginTop;
+
+      doc
+        .rect(marginLeft, bannerY, pageWidth, bannerHeight)
+        .fill(COLOR_PRIMARY_DARK);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(13)
+        .text("FLCMS", marginLeft + 16, bannerY + 10);
+
+      doc
+        .fillColor(COLOR_ACCENT)
+        .font("Helvetica")
+        .fontSize(7.5)
+        .text(
+          "FACULTY LABORATORY CHEMICAL MANAGEMENT SYSTEM",
+          marginLeft + 16,
+          bannerY + 26,
+        );
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text("Chemical Stock Report", marginLeft + 16, bannerY + 39);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica")
+        .fontSize(8)
+        .text(
+          `Generated ${new Date().toLocaleString("en-GB")}`,
+          marginLeft,
+          bannerY + 10,
+          { width: pageWidth - 16, align: "right" },
+        );
+
+      // ---------- Chemical identity card ----------
+      const cardY = bannerY + bannerHeight + 16;
+      const cardHeight = 54;
+
+      doc
+        .rect(marginLeft, cardY, pageWidth, cardHeight)
+        .fillAndStroke("#F3F0E8", COLOR_BORDER);
+
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica-Bold")
+        .fontSize(7)
+        .text("CHEMICAL", marginLeft + 14, cardY + 10);
+
+      doc
+        .fillColor(COLOR_TEXT)
+        .font("Helvetica-Bold")
+        .fontSize(15)
+        .text(data.canonicalName, marginLeft + 14, cardY + 20, {
+          width: pageWidth * 0.6,
+          ellipsis: true,
+        });
+
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica-Bold")
+        .fontSize(7)
+        .text("CHEMICAL CODE", marginLeft + pageWidth * 0.62, cardY + 10);
+
+      doc
+        .fillColor(COLOR_PRIMARY)
+        .font("Helvetica-Bold")
+        .fontSize(15)
+        .text(data.chemicalCode, marginLeft + pageWidth * 0.62, cardY + 20);
+
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica")
+        .fontSize(8)
+        .text(
+          `Base Unit: ${data.baseUnit}    |    Stock Type: ${data.stockDimension}    |    CAS: ${
+            data.casNumber || "—"
+          }    |    Batches: ${data.batches.length}`,
+          marginLeft + 14,
+          cardY + cardHeight - 16,
+        );
+
+      doc.y = cardY + cardHeight + 18;
+    };
+
+    /**
+     * Compact running header — drawn at the top of every page after
+     * the first, so a reader can always tell which chemical/page
+     * they're looking at without scrolling back.
+     */
+    const drawCompactHeader = () => {
+      const bannerHeight = 28;
+      const bannerY = marginTop;
+
+      doc
+        .rect(marginLeft, bannerY, pageWidth, bannerHeight)
+        .fill(COLOR_PRIMARY_DARK);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text(
+          `FLCMS  ·  ${data.canonicalName} (${data.chemicalCode})`,
+          marginLeft + 14,
+          bannerY + 9,
+          { width: pageWidth * 0.7 },
+        );
+
+      doc
+        .fillColor(COLOR_ACCENT)
+        .font("Helvetica")
+        .fontSize(8)
+        .text("Chemical Stock Report (cont.)", marginLeft, bannerY + 9, {
+          width: pageWidth - 14,
+          align: "right",
+        });
+
+      doc.y = bannerY + bannerHeight + 14;
+    };
+
+    const drawTableHeader = (y) => {
+      doc.rect(marginLeft, y, pageWidth, rowHeight).fill(COLOR_PRIMARY);
+      let x = marginLeft;
+      doc.fillColor("#FFFFFF").fontSize(8).font("Helvetica-Bold");
+      columns.forEach((col) => {
+        doc.text(col.label, x + 4, y + 7, { width: col.width - 8 });
+        x += col.width;
+      });
+      return y + rowHeight;
+    };
+
+    let cursorY;
+
+    // Redraw the compact header + table header automatically whenever
+    // a new page starts (including pages pdfkit adds on its own).
+    doc.on("pageAdded", () => {
+      drawCompactHeader();
+      cursorY = drawTableHeader(doc.y);
+    });
+
+    // ---------- Page 1 ----------
+    drawFullHeader();
+    cursorY = drawTableHeader(doc.y);
+
+    if (data.batches.length === 0) {
+      doc
+        .fillColor(COLOR_TEXT_MUTED)
+        .fontSize(9)
+        .font("Helvetica-Oblique")
+        .text(
+          "No batches recorded for this chemical.",
+          marginLeft + 4,
+          cursorY + 10,
+        );
+    }
+
+    data.batches.forEach((batch, index) => {
+      if (
+        cursorY + rowHeight >
+        doc.page.height - doc.page.margins.bottom - 20
+      ) {
+        doc.addPage(); // triggers the 'pageAdded' handler above
+      }
+
+      if (index % 2 === 0) {
+        doc.rect(marginLeft, cursorY, pageWidth, rowHeight).fill("#F8F6F0");
+      }
+
+      const rowValues = {
+        batchNumber: batch.batchNumber,
+        receivedDate: formatDate(batch.receivedDate),
+        expiryDate: formatDate(batch.expiryDate),
+        quantityReceived: `${batch.quantityReceived}${data.baseUnit}`,
+        currentQuantity: `${batch.currentQuantity}${data.baseUnit}`,
+        daysRemaining:
+          batch.daysRemaining === null ? "—" : `${batch.daysRemaining}d`,
+        status: batch.status,
+        supplier: batch.supplier || "—",
+      };
+
+      let x = marginLeft;
+      columns.forEach((col) => {
+        doc.fontSize(8);
+        doc.font(col.key === "status" ? "Helvetica-Bold" : "Helvetica");
+        doc.fillColor(
+          col.key === "status" ? statusColor(batch.status) : COLOR_TEXT,
+        );
+        doc.text(String(rowValues[col.key]), x + 4, cursorY + 7, {
+          width: col.width - 8,
+          ellipsis: true,
+        });
+        x += col.width;
+      });
+
+      cursorY += rowHeight;
+    });
+
+    // ---------- Footer on every page ----------
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      doc
+        .fontSize(7)
+        .fillColor(COLOR_TEXT_MUTED)
+        .font("Helvetica")
+        .text(
+          `Page ${i + 1} of ${range.count}   ·   Generated by FLCMS — reflects stock levels at time of export.`,
+          marginLeft,
+          doc.page.height - doc.page.margins.bottom - 14,
+          { width: pageWidth, align: "center", lineBreak: false },
+        );
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error("Error generating chemical report PDF:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        message: "An error occurred while generating the PDF report.",
+      });
+    }
+  }
+};
+
+module.exports = {
+  getChemicalReport,
+  downloadChemicalReport,
+};

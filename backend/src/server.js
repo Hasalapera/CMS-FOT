@@ -18,6 +18,7 @@ const disposeRoutes = require("./routes/DisposeRoute.js");
 const auditLogRoutes = require("./routes/AuditLogRoute.js");
 const usageRoutes = require("./routes/UsageRoute.js");
 const notificationRoutes = require("./routes/NotificationRoute.js");
+const reportRoutes = require("./routes/ReportRoute.js");
 const {
   notifyExpiringBatches,
   notifyLowStockBatches,
@@ -28,16 +29,19 @@ const PORT = process.env.PORT || 5000;
 
 // Trust the first proxy in front of the app (e.g., Render's load balancer)
 // This is necessary to get the correct client IP address from req.ip
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // Define a whitelist of allowed origins
 const allowedOrigins = [
-  'http://localhost:5173', // Your local frontend
-  'https://fotcms.onrender.com', // Your deployed frontend
+  "http://localhost:5173", // Your local frontend
+  "https://fotcms.onrender.com", // Your deployed frontend
 ];
 
 // Dynamically add the FRONTEND_URL from the .env file to the whitelist if it's not already there.
-if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+if (
+  process.env.FRONTEND_URL &&
+  !allowedOrigins.includes(process.env.FRONTEND_URL)
+) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
@@ -47,7 +51,7 @@ const corsOptions = {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -74,6 +78,7 @@ app.use("/api/dispose", disposeRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/usage", usageRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/reports", reportRoutes);
 
 const startExpiryNotificationScheduler = () => {
   const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
