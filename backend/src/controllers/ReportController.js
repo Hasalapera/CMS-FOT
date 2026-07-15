@@ -394,10 +394,6 @@ const downloadChemicalReport = async (req, res) => {
   }
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   USAGE REPORT
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 const buildUsageReportData = async (startDate, endDate) => {
   // Include end-of-day for endDate so the full day is captured
   const endOfDay = new Date(endDate);
