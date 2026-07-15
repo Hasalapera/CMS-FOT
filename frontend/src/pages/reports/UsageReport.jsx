@@ -62,10 +62,6 @@ const StatusBadge = ({ status }) => {
       cls: "bg-[var(--color-warning)]/10 text-[var(--color-warning)]",
       Icon: Clock,
     },
-    DISPOSED: {
-      cls: "bg-[var(--color-danger)]/10 text-[var(--color-danger)]",
-      Icon: XCircle,
-    },
   };
   const { cls, Icon } = map[status] || {
     cls: "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]",
@@ -408,7 +404,6 @@ const UsageReport = () => {
                     <option value="ALL">All statuses</option>
                     <option value="RELEASED">Released</option>
                     <option value="RETURNED">Returned</option>
-                    <option value="DISPOSED">Disposed</option>
                   </select>
                 </div>
               </div>

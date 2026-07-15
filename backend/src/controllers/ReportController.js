@@ -516,7 +516,7 @@ const downloadUsageReport = async (req, res) => {
     const statusColor = (status) => {
       if (status === "RETURNED") return COLOR_SUCCESS;
       if (status === "RELEASED") return COLOR_WARNING;
-      if (status === "DISPOSED") return COLOR_DANGER;
+     
       return COLOR_TEXT_MUTED;
     };
 

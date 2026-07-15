@@ -70,7 +70,7 @@ module.exports = function DisposeModel(sequelize) {
       },
 
       returnedStatus: {
-        type: DataTypes.ENUM("RELEASED", "RETURNED", "DISPOSED"),
+        type: DataTypes.ENUM("RELEASED", "RETURNED"),
         allowNull: false,
         defaultValue: "RELEASED",
         field: "returned_status",
