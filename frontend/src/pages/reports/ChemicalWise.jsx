@@ -20,19 +20,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axiosInstance";
 
-/**
- * ENDPOINT ASSUMPTIONS — adjust these three paths to match your actual
- * report controller once it's ready:
- *
- *   GET  /reports/chemicals                     -> [{ id, chemicalCode, canonicalName }]
- *   GET  /reports/chemical/:chemicalCode         -> {
- *          chemicalCode, canonicalName, baseUnit,
- *          batches: [{ batchNumber, receivedDate, expiryDate,
- *                       quantityReceived, currentQuantity, supplier }]
- *        }
- *   GET  /reports/chemical/:chemicalCode/download (blob) -> PDF file
- */
-
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
