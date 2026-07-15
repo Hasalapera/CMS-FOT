@@ -1,5 +1,10 @@
 const { Batch, Chemical, Location } = require('../models/index.js');
 const { Op } = require('sequelize');
+const {
+  notifyExpiringBatches,
+  notifyLowStockBatch,
+  notifyLowStockBatches,
+} = require('../services/notificationService.js');
 
 const getAllBatches = async (req, res) => {
   try {
@@ -71,6 +76,9 @@ const addBatch = async (req, res) => {
       locationId: locationId || null,
     });
 
+    await notifyExpiringBatches();
+    await notifyLowStockBatch(newBatch.id);
+
     res.status(201).json({
       success: true,
       message: 'New batch added successfully.',
@@ -84,6 +92,64 @@ const addBatch = async (req, res) => {
       return res.status(400).json({ success: false, message: messages.join('. ') });
     }
     res.status(500).json({ success: false, message: 'Internal server error while adding the batch.' });
+  }
+};
+
+const checkLowStockNotifications = async (req, res) => {
+  try {
+    if (!['ADMIN', 'TECHNICAL_OFFICER'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins and technical officers can run low stock notification checks.',
+      });
+    }
+
+    const result = await notifyLowStockBatches();
+
+    if (result.error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Low stock notification check failed.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Low stock notification check completed.',
+      result,
+    });
+  } catch (error) {
+    console.error('Error checking low stock notifications:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while checking low stock notifications.' });
+  }
+};
+
+const checkExpiryNotifications = async (req, res) => {
+  try {
+    if (!['ADMIN', 'TECHNICAL_OFFICER'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins and technical officers can run expiry notification checks.',
+      });
+    }
+
+    const result = await notifyExpiringBatches();
+
+    if (result.error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Expiry notification check failed.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Expiry notification check completed.',
+      result,
+    });
+  } catch (error) {
+    console.error('Error checking expiry notifications:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while checking expiry notifications.' });
   }
 };
 
@@ -140,4 +206,6 @@ module.exports = {
   addBatch,
   getAllBatches,
   getBatchById,
+  checkExpiryNotifications,
+  checkLowStockNotifications,
 };

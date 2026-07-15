@@ -14,9 +14,14 @@ const userRoutes = require("./routes/UserRoute.js");
 const chemicalRoutes = require("./routes/ChemicalRoute.js");
 const locationRoutes = require("./routes/LocationRoute.js");
 const batchRoutes = require("./routes/BatchRoute.js");
-const disposeRoutes = require("./routes/DisoposeRoute.js");
+const disposeRoutes = require("./routes/DisposeRoute.js");
 const auditLogRoutes = require("./routes/AuditLogRoute.js");
 const usageRoutes = require("./routes/UsageRoute.js");
+const notificationRoutes = require("./routes/NotificationRoute.js");
+const {
+  notifyExpiringBatches,
+  notifyLowStockBatches,
+} = require("./services/notificationService.js");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -68,6 +73,32 @@ app.use("/api/batches", batchRoutes);
 app.use("/api/dispose", disposeRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/usage", usageRoutes);
+app.use("/api/notifications", notificationRoutes);
+
+const startExpiryNotificationScheduler = () => {
+  const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+
+  const runExpiryNotificationCheck = async () => {
+    const expiryResult = await notifyExpiringBatches();
+    const lowStockResult = await notifyLowStockBatches();
+
+    if (!expiryResult.error) {
+      console.log(
+        `[NotificationService] Expiry check completed. Created ${expiryResult.createdNotifications || 0} notifications.`,
+      );
+    }
+
+    if (!lowStockResult.error) {
+      console.log(
+        `[NotificationService] Low stock check completed. Created ${lowStockResult.createdNotifications || 0} notifications.`,
+      );
+    }
+  };
+
+  runExpiryNotificationCheck();
+  setInterval(runExpiryNotificationCheck, oneDayInMilliseconds);
+};
+
 const startServer = async () => {
   try {
     console.log("Connecting to the database...");
@@ -82,6 +113,7 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
     });
+    startExpiryNotificationScheduler();
   } catch (error) {
     console.error("\nServer startup failed:");
     console.error(error);

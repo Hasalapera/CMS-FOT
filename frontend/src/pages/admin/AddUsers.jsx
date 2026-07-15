@@ -18,6 +18,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import api from "../../api/axiosInstance";
 
 const INITIAL_FORM = {
@@ -79,6 +80,7 @@ const ErrorMessage = ({ message }) => {
 
 const AddUsers = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
@@ -151,6 +153,8 @@ const AddUsers = () => {
         type: "success",
         text: "User created successfully! Redirecting shortly.",
       });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notificationCount"] });
 
       setTimeout(() => {
         navigate("/admin/users/view");

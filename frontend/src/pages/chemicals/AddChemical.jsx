@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Beaker,
+  CheckCircle2,
   ChevronDown,
   FlaskConical,
   Info,
@@ -21,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 
 // Import the configured Axios instance
 import api from "../../api/axiosInstance";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 
 const INITIAL_FORM = {
@@ -150,16 +152,39 @@ const isValidCasNumber = (casNumber) => {
 
 const AddChemical = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(null);
   const [isCodeLoading, setIsCodeLoading] = useState(true);
   const [sdsFile, setSdsFile] = useState(null);
 
   const [isCasLoading, setIsCasLoading] = useState(false);
   const [casLookupMessage, setCasLookupMessage] = useState(null);
+
+  const addChemicalMutation = useMutation({
+    mutationFn: (payload) => api.post("/chemicals/add-chemical", payload),
+    onSuccess: () => {
+      // Invalidate the query so ViewChemicals refetches fresh data
+      queryClient.invalidateQueries({ queryKey: ['chemicals'] });
+
+      setSubmitMessage({
+        type: "success",
+        text: "Chemical created successfully! You will be redirected shortly.",
+      });
+
+      setTimeout(() => {
+        navigate('/chemicals/list');
+      }, 1500);
+    },
+    onError: (error) => {
+      setSubmitMessage({
+        type: "error",
+        text: error.response?.data?.message || error.message || "Unable to add the chemical. Please try again.",
+      });
+    },
+  });
 
   useEffect(() => {
     const fetchNextCode = async () => {
@@ -459,9 +484,7 @@ const AddChemical = () => {
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      setSubmitMessage(null);
+    setSubmitMessage(null);
 
       const formPayload = new FormData();
       const payload = buildPayload();
@@ -481,33 +504,7 @@ const AddChemical = () => {
       if (sdsFile) {
         formPayload.append("sdsFile", sdsFile);
       }
-      const response = await api.post("/chemicals/add-chemical", formPayload);
-
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || "Unable to add chemical.");
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      setSubmitMessage({
-        type: "success",
-        text: "Chemical created successfully! You will be redirected shortly.",
-      });
-
-      setTimeout(() => {
-        navigate('/chemicals/list'); // Redirect to the list page after success
-      }, 2000);
-    } catch (error) {
-      setSubmitMessage({
-        type: "error",
-        text:
-          error.response?.data?.message ||
-          error.message ||
-          "Unable to add the chemical. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    addChemicalMutation.mutate(formPayload);
   };
 
   const handleReset = () => {
@@ -516,6 +513,8 @@ const AddChemical = () => {
     setSubmitMessage(null);
     setSdsFile(null);
   };
+
+  const isSubmitting = addChemicalMutation.isPending;
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">

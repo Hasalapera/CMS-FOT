@@ -1,6 +1,7 @@
 const { Chemical } = require('../models/index.js');
 const { Op } = require('sequelize');
 const { logAction } = require("../services/auditLogService.js");
+const { createNotification } = require("../services/notificationService.js");
 const axios = require('axios');
 
 const getNextChemicalCode = async (req, res) => {
@@ -75,6 +76,23 @@ const addChemical = async (req, res) => {
 
     // Create the new chemical in the database
     const chemical = await Chemical.create(payload);
+
+    await createNotification({
+      actor: {
+        id: req.user.id,
+        fullName: req.user.fullName,
+      },
+      entity: chemical,
+      entityType: 'Chemical',
+      type: 'NEW_CHEMICAL_ADDED',
+      severity: 'INFO',
+      messageBuilder: {
+        actor: (createdChemical) =>
+          `You added a new chemical: ${createdChemical.canonicalName} (${createdChemical.chemicalCode}).`,
+        others: (actorName, createdChemical) =>
+          `${actorName} added a new chemical: ${createdChemical.canonicalName} (${createdChemical.chemicalCode}).`,
+      },
+    });
 
     // Audit Log: Chemical Creation
     await logAction({
