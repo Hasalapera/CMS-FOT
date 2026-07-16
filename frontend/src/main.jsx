@@ -29,6 +29,9 @@ if (typeof window !== "undefined") {
       ["chemicalsWithSds"],
       ["notifications"],
       ["notificationCount"],
+      ["chemicalStats"],
+      ["batchStats"],
+      ["usageTrend"],
     ].forEach((queryKey) => {
       queryClient.invalidateQueries({ queryKey });
     });

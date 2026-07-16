@@ -1,4 +1,4 @@
-const { Chemical, Batch, Dispose } = require("../models/index.js");
+const { Chemical, Batch, Dispose, sequelize } = require("../models/index.js");
 const { Op } = require("sequelize");
 const PDFDocument = require("pdfkit");
 
@@ -1045,10 +1045,47 @@ const downloadFullInventoryReport = async (req, res) => {
   }
 };
 
+const getUsageTrend = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "startDate and endDate query parameters are required." });
+    }
+
+    const endOfDay = new Date(endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const trendData = await Dispose.findAll({
+      attributes: [
+        [sequelize.fn('date_trunc', 'day', sequelize.col('date_released')), 'date'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'usageCount']
+      ],
+      where: {
+        dateReleased: {
+          [Op.between]: [new Date(startDate), endOfDay]
+        },
+      },
+      group: [sequelize.fn('date_trunc', 'day', sequelize.col('date_released'))],
+      order: [[sequelize.fn('date_trunc', 'day', sequelize.col('date_released')), 'ASC']],
+      raw: true,
+    });
+
+    res.json({ success: true, trend: trendData });
+
+  } catch (error) {
+    console.error("Error fetching usage trend data:", error);
+    res.status(500).json({
+      message: "An error occurred while generating the usage trend data.",
+    });
+  }
+};
+
 module.exports = {
   getChemicalReport,
   downloadChemicalReport,
   getUsageReport,
   downloadUsageReport,
   downloadFullInventoryReport,
+  getUsageTrend,
 };

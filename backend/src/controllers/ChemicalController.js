@@ -774,6 +774,12 @@ const getChemicalStats = async (req, res) => {
   try {
     const activeCount = await Chemical.count({ where: { isActive: true } });
     const inactiveCount = await Chemical.count({ where: { isActive: false } });
+    const sdsCount = await Chemical.count({
+      where: {
+        isActive: true,
+        sdsStorageKey: { [Op.ne]: null },
+      },
+    });
 
     res.status(200).json({
       success: true,
@@ -781,6 +787,7 @@ const getChemicalStats = async (req, res) => {
         active: activeCount,
         inactive: inactiveCount,
         total: activeCount + inactiveCount,
+        sdsCount: sdsCount,
       },
     });
   } catch (error) {

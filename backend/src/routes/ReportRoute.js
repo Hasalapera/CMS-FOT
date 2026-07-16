@@ -1,21 +1,27 @@
-const reportController = require("../controllers/ReportController");
-const verifyToken = require('../middlewares/Authmiddleware.js');
-const express = require("express");
+const express = require('express');
 const router = express.Router();
+const ReportController = require('../controllers/ReportController.js');
+const verifyToken = require('../middlewares/Authmiddleware.js');
 
-// chemical wise report
-router.get("/chemicals/:chemicalCode",verifyToken, reportController.getChemicalReport);
-router.get(
-  "/chemicals/:chemicalCode/download",
-  verifyToken,
-  reportController.downloadChemicalReport,
-);
+// Protect all report routes
+router.use(verifyToken);
 
-// usage report
-router.get("/usage", verifyToken, reportController.getUsageReport);
-router.get("/usage/download",verifyToken, reportController.downloadUsageReport);
+// Route to get data for the usage trend chart on the dashboard
+router.get('/usage-trend', ReportController.getUsageTrend);
 
-// Full Inventory Status Report
-router.get("/inventory/download", verifyToken, reportController.downloadFullInventoryReport);
+// Route to get data for a single chemical report
+router.get('/chemical/:chemicalCode', ReportController.getChemicalReport);
+
+// Route to download a PDF for a single chemical report
+router.get('/chemical/:chemicalCode/download', ReportController.downloadChemicalReport);
+
+// Route to get data for a usage report over a date range
+router.get('/usage', ReportController.getUsageReport);
+
+// Route to download a PDF for a usage report
+router.get('/usage/download', ReportController.downloadUsageReport);
+
+// Route to download a PDF for the full inventory
+router.get('/inventory/download', ReportController.downloadFullInventoryReport);
 
 module.exports = router;

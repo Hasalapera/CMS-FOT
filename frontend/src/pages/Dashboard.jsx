@@ -62,49 +62,6 @@ const number = (value) =>
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
 
-const USAGE = [
-  { id: 1, date: daysAgo(1), chemical: "Acetone", category: "Flammable", quantity: 1.25, user: "Dr. Alex Davis", lab: "Organic Synthesis Lab" },
-  { id: 2, date: daysAgo(3), chemical: "Ethanol", category: "Flammable", quantity: 2.0, user: "Emily Mehta", lab: "Biochemistry Lab" },
-  { id: 3, date: daysAgo(5), chemical: "Sodium Hydroxide", category: "Corrosive", quantity: 0.25, user: "Sam Patel", lab: "Analytical Chemistry" },
-  { id: 4, date: daysAgo(8), chemical: "Silver Nitrate", category: "Oxidizing", quantity: 0.1, user: "Ananya Kapoor", lab: "Titration Lab" },
-  { id: 5, date: daysAgo(11), chemical: "Hydrochloric Acid (37%)", category: "Corrosive", quantity: 0.5, user: "Mohammed Junaid", lab: "Photochemistry Lab" },
-  { id: 6, date: daysAgo(15), chemical: "Ethanol", category: "Flammable", quantity: 1.6, user: "Dr. Alex Davis", lab: "Research Annex" },
-  { id: 7, date: daysAgo(20), chemical: "Acetone", category: "Flammable", quantity: 2.3, user: "Nimal Perera", lab: "Organic Synthesis Lab" },
-  { id: 8, date: daysAgo(27), chemical: "Nitric Acid (70%)", category: "Oxidizing", quantity: 0.4, user: "Ishara Silva", lab: "Inorganic Lab" },
-  { id: 9, date: daysAgo(34), chemical: "Sodium Hydroxide", category: "Corrosive", quantity: 0.75, user: "Hasini Fernando", lab: "Analytical Chemistry" },
-  { id: 10, date: daysAgo(41), chemical: "Ethanol", category: "Flammable", quantity: 3.1, user: "Dr. Alex Davis", lab: "Biochemistry Lab" },
-  { id: 11, date: daysAgo(49), chemical: "Acetone", category: "Flammable", quantity: 1.8, user: "Emily Mehta", lab: "Research Annex" },
-  { id: 12, date: daysAgo(58), chemical: "Hydrochloric Acid (37%)", category: "Corrosive", quantity: 0.9, user: "Sam Patel", lab: "Photochemistry Lab" },
-  { id: 13, date: daysAgo(67), chemical: "Silver Nitrate", category: "Oxidizing", quantity: 0.2, user: "Ananya Kapoor", lab: "Titration Lab" },
-  { id: 14, date: daysAgo(76), chemical: "Ethanol", category: "Flammable", quantity: 2.7, user: "Mohammed Junaid", lab: "Research Annex" },
-  { id: 15, date: daysAgo(88), chemical: "Sodium Hydroxide", category: "Corrosive", quantity: 0.55, user: "Ishara Silva", lab: "Analytical Chemistry" },
-];
-
-const INVENTORY = [
-  { id: 1, name: "Acetone", cas: "67-64-1", category: "Flammable", quantity: "18.50 L", expiry: daysAgo(-132), status: "Sufficient", location: "Organic Lab / Cabinet A" },
-  { id: 2, name: "Ethanol", cas: "64-17-5", category: "Flammable", quantity: "32.20 L", expiry: daysAgo(-178), status: "Sufficient", location: "Organic Lab / Cabinet B" },
-  { id: 3, name: "Hydrochloric Acid (37%)", cas: "7647-01-0", category: "Corrosive", quantity: "6.25 L", expiry: daysAgo(-36), status: "Low Stock", location: "Acid Store / Shelf A" },
-  { id: 4, name: "Sodium Hydroxide", cas: "1310-73-2", category: "Corrosive", quantity: "2.15 kg", expiry: daysAgo(-21), status: "Low Stock", location: "Chemical Store / Cabinet 3" },
-  { id: 5, name: "Silver Nitrate", cas: "7761-88-8", category: "Oxidizing", quantity: "500 g", expiry: daysAgo(-8), status: "Expiring Soon", location: "Inorganic Lab / Shelf C" },
-  { id: 6, name: "Nitric Acid (70%)", cas: "7697-37-2", category: "Oxidizing", quantity: "8.40 L", expiry: daysAgo(-17), status: "Expiring Soon", location: "Acid Store / Shelf B" },
-];
-
-const LOCATIONS = [
-  { name: "Science Building", count: 8, usage: 78 },
-  { name: "Research Annex", count: 5, usage: 61 },
-  { name: "Chemistry Lab", count: 4, usage: 64 },
-  { name: "Engineering Block", count: 3, usage: 45 },
-  { name: "Health Sciences", count: 2, usage: 33 },
-  { name: "Innovation Centre", count: 2, usage: 22 },
-];
-
-const ALERTS = [
-  { id: 1, title: "Hydrochloric Acid (37%)", text: "Quantity is below the configured threshold.", label: "Low Stock", color: "var(--color-warning)", Icon: AlertTriangle },
-  { id: 2, title: "Sodium Hydroxide", text: "Only 2.15 kg remains in Cabinet 3.", label: "Low Stock", color: "var(--color-warning)", Icon: AlertTriangle },
-  { id: 3, title: "Silver Nitrate", text: "This batch will expire within the next 30 days.", label: "Expiring Soon", color: "var(--color-danger)", Icon: CalendarDays },
-  { id: 4, title: "SDS document updated", text: "The latest SDS version is now available.", label: "Information", color: "var(--color-info)", Icon: FileText },
-];
-
 const SectionHeader = ({ icon: Icon, title, text, to, action }) => (
   <header className="flex flex-col gap-3 border-b border-[var(--color-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
     <div className="flex min-w-0 items-start gap-3">
@@ -268,13 +225,35 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState(inputDate(monthStart));
   const [endDate, setEndDate] = useState(inputDate(today));
 
+  const invalidRange = dateFromInput(startDate) > dateFromInput(endDate);
+
   const { data: chemicalStats, isLoading: isLoadingChemicalStats } = useQuery({
     queryKey: ['chemicalStats'],
     queryFn: () => api.get('/chemicals/stats').then(res => res.data.stats),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
+  const { data: batchStats, isLoading: isLoadingBatchStats } = useQuery({
+    queryKey: ['batchStats'],
+    queryFn: () => api.get('/batches/stats').then(res => res.data.stats),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const { data: trendData, isLoading: isLoadingTrend } = useQuery({
+    queryKey: ['usageTrend', startDate, endDate],
+    queryFn: () => api.get('/reports/usage-trend', { params: { startDate, endDate } }).then(res => res.data.trend),
+    enabled: !!startDate && !!endDate && !invalidRange,
+  });
+
   const displayName = user?.fullName || user?.name || user?.institutionalId || "FLCMS User";
+
+  // Helper function to format date as YYYY-MM-DD
+  const toInputDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const applyPreset = (value) => {
     const end = new Date();
@@ -290,77 +269,38 @@ const Dashboard = () => {
     setEndDate(inputDate(end));
   };
 
-  const filteredUsage = useMemo(() => {
-    const start = dateFromInput(startDate);
-    const end = dateFromInput(endDate, true);
-    if (!start || !end || start > end) return [];
-
-    return USAGE.filter((item) => {
-      const date = dateFromInput(item.date);
-      return date >= start && date <= end;
-    }).sort((a, b) => dateFromInput(b.date) - dateFromInput(a.date));
-  }, [startDate, endDate]);
-
-  const report = useMemo(() => {
-    const total = filteredUsage.reduce((sum, item) => sum + item.quantity, 0);
-    const chemicals = {};
-    const categories = {};
-
-    filteredUsage.forEach((item) => {
-      chemicals[item.chemical] = (chemicals[item.chemical] || 0) + item.quantity;
-      categories[item.category] = (categories[item.category] || 0) + item.quantity;
-    });
-
-    const top = Object.entries(chemicals)
-      .map(([chemical, quantity]) => ({ chemical, quantity }))
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 5);
-
-    const colors = {
-      Flammable: "var(--color-danger)",
-      Corrosive: "var(--color-warning)",
-      Oxidizing: "var(--color-accent)",
-    };
-
-    const pie = Object.entries(categories)
-      .map(([label, value]) => ({ label, value, color: colors[label] || "var(--color-info)" }))
-      .sort((a, b) => b.value - a.value);
+  const trendPoints = useMemo(() => {
+    if (!trendData || !startDate || !endDate || invalidRange) return [];
 
     const start = dateFromInput(startDate);
-    const end = dateFromInput(endDate, true);
+    const end = dateFromInput(endDate);
+    const dateMap = new Map(trendData.map(d => [toInputDate(new Date(d.date)), Number(d.usageCount)]));
+
     const trend = [];
+    const totalDays = Math.max(1, Math.floor((end - start) / DAY) + 1);
+    const buckets = Math.min(8, totalDays);
+    const bucketSize = Math.max(1, Math.ceil(totalDays / buckets));
 
-    if (start && end && start <= end) {
-      const totalDays = Math.max(1, Math.floor((end - start) / DAY) + 1);
-      const buckets = Math.min(8, totalDays);
-      const bucketSize = Math.max(1, Math.ceil(totalDays / buckets));
-
-      for (let index = 0; index < buckets; index += 1) {
-        const bucketStart = new Date(start.getTime() + index * bucketSize * DAY);
-        const bucketEnd = new Date(Math.min(end.getTime(), bucketStart.getTime() + (bucketSize - 1) * DAY));
-        bucketEnd.setHours(23, 59, 59, 999);
-
-        const value = filteredUsage
-          .filter((item) => {
-            const itemDate = dateFromInput(item.date);
-            return itemDate >= bucketStart && itemDate <= bucketEnd;
-          })
-          .reduce((sum, item) => sum + item.quantity, 0);
-
+    for (let i = 0; i < buckets; i++) {
+        const bucketStart = new Date(start.getTime() + i * bucketSize * DAY);
+        let bucketValue = 0;
+        for (let j = 0; j < bucketSize; j++) {
+            const day = new Date(bucketStart.getTime() + j * DAY);
+            if (day > end) break;
+            const dayString = toInputDate(day);
+            if (dateMap.has(dayString)) {
+                bucketValue += dateMap.get(dayString);
+            }
+        }
         trend.push({
-          label: new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" }).format(bucketStart),
-          value,
+            label: new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" }).format(bucketStart),
+            value: bucketValue,
         });
-      }
     }
+    return trend;
+  }, [trendData, startDate, endDate, invalidRange]);
 
-    return { total, top, pie, trend, unique: Object.keys(chemicals).length };
-  }, [filteredUsage, startDate, endDate]);
-
-  const lowStock = INVENTORY.filter((item) => item.status === "Low Stock").length;
-  const expiring = INVENTORY.filter((item) => item.status === "Expiring Soon").length;
-  const topMax = Math.max(...report.top.map((item) => item.quantity), 1);
-  const invalidRange = dateFromInput(startDate) > dateFromInput(endDate);
+  const totalUsageCount = useMemo(() => trendData?.reduce((sum, item) => sum + Number(item.usageCount), 0) || 0, [trendData]);
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
@@ -491,31 +431,72 @@ const Dashboard = () => {
                 helperClass="text-[var(--color-text-secondary)]"
               />
             </Link>
-            <MetricCard label="Low Stock" value={lowStock} helper="Reorder recommended" icon={AlertTriangle} iconClass="bg-[var(--color-surface-muted)] text-[var(--color-warning)]" helperClass="text-[var(--color-warning)]" />
-            <MetricCard label="Expiring Soon" value={expiring} helper="Within next 30 days" icon={CalendarDays} iconClass="bg-[var(--color-surface-muted)] text-[var(--color-danger)]" helperClass="text-[var(--color-danger)]" />
+            <Link to="/stock/batches">
+              <article className={`${PANEL} flex h-full flex-col p-0 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]`}>
+                <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Inventory Alerts</p>
+                    <p className="mt-3 truncate text-2xl font-extrabold text-[var(--color-text-primary)] sm:text-3xl">
+                      {isLoadingBatchStats ? <Loader2 className="inline-block h-7 w-7 animate-spin" /> : number((batchStats?.lowStock || 0) + (batchStats?.expiringSoon || 0))}
+                    </p>
+                  </div>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-muted)] text-[var(--color-warning)]">
+                    <AlertTriangle size={23} />
+                  </span>
+                </div>
+                <div className="mt-auto grid grid-cols-2 border-t border-[var(--color-border)]">
+                  <div className="border-r border-[var(--color-border)] p-2 text-center">
+                    <p className="text-lg font-bold text-[var(--color-warning)]">{isLoadingBatchStats ? '...' : number(batchStats?.lowStock)}</p>
+                    <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">Low Stock</p>
+                  </div>
+                  <div className="p-2 text-center">
+                    <p className="text-lg font-bold text-[var(--color-danger)]">{isLoadingBatchStats ? '...' : number(batchStats?.expiringSoon)}</p>
+                    <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">Expiring Soon</p>
+                  </div>
+                </div>
+              </article>
+            </Link>
             <MetricCard label="Locations" value="24" helper="Across 6 laboratory areas" icon={MapPin} iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]" />
-            <MetricCard label="Selected Usage" value={`${number(report.total)} L`} helper={`${filteredUsage.length} usage records`} icon={TrendingUp} iconClass="bg-[var(--color-primary-tint)] text-[var(--color-success)]" />
-            <MetricCard label="SDS Documents" value="116" helper="90.6% document coverage" icon={FileText} iconClass="bg-[var(--color-surface-muted)] text-[var(--color-accent-dark)]" helperClass="text-[var(--color-accent-dark)]" />
+            <MetricCard
+              label="Total Usage"
+              value={isLoadingBatchStats ? <Loader2 className="h-7 w-7 animate-spin" /> : `${(batchStats?.usagePercentage || 0).toFixed(1)}%`}
+              helper={isLoadingBatchStats ? "Loading..." : `${number(batchStats?.totalUsed)} of ${number(batchStats?.totalReceived)} units consumed`}
+              icon={TrendingUp}
+              iconClass="bg-[var(--color-primary-tint)] text-[var(--color-success)]"
+              helperClass="text-[var(--color-success)]"
+            />
+            <Link to="/sds/library">
+              <MetricCard
+                label="SDS Documents"
+                value={isLoadingChemicalStats ? <Loader2 className="h-7 w-7 animate-spin" /> : number(chemicalStats?.sdsCount)}
+                helper={
+                  isLoadingChemicalStats ? "Loading..." :
+                  `${chemicalStats?.active > 0 ? ((chemicalStats?.sdsCount / chemicalStats?.active) * 100).toFixed(1) : '0.0'}% document coverage`
+                }
+                icon={FileText}
+                iconClass="bg-[var(--color-surface-muted)] text-[var(--color-accent-dark)]"
+                helperClass="text-[var(--color-accent-dark)]"
+              />
+            </Link>
           </section>
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">
             <article className={`${PANEL} overflow-hidden xl:col-span-2`}>
               <SectionHeader icon={Activity} title="Chemical Usage Trend" text="Issued quantity for the selected reporting period." to="/reports/usage" action="View report" />
               <div className="p-4 sm:p-5">
-                {!report.total ? (
+                {isLoadingTrend ? (
+                  <div className="flex min-h-44 items-center justify-center"><Loader2 className="animate-spin" /></div>
+                ) : trendPoints.length === 0 ? (
                   <EmptyState>No chemical usage was recorded in this date range.</EmptyState>
                 ) : (
                   <>
                     <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Total Usage</p>
-                        <p className="mt-1 text-2xl font-extrabold text-[var(--color-primary)]">{number(report.total)} L</p>
+                        <p className="mt-1 text-2xl font-extrabold text-[var(--color-primary)]">{number(totalUsageCount)}</p>
                       </div>
-                      <span className="rounded-full bg-[var(--color-primary-tint)] px-3 py-1.5 text-xs font-bold text-[var(--color-primary)]">
-                        {report.unique} active chemicals
-                      </span>
                     </div>
-                    <TrendChart points={report.trend} />
+                    <TrendChart points={trendPoints} />
                   </>
                 )}
               </div>
@@ -524,7 +505,7 @@ const Dashboard = () => {
             <article className={`${PANEL} overflow-hidden`}>
               <SectionHeader icon={ShieldAlert} title="Usage by Hazard Category" text="Dynamic distribution for the selected dates." />
               <div className="p-4 sm:p-5">
-                {report.pie.length ? <DonutChart data={report.pie} /> : <EmptyState>No category data is available.</EmptyState>}
+                <EmptyState>Usage by category is coming soon.</EmptyState>
               </div>
             </article>
           </section>
@@ -545,7 +526,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border)]">
-                    {INVENTORY.map((item) => (
+                    {/* {INVENTORY.map((item) => (
                       <tr key={item.id} className="hover:bg-[var(--color-primary-tint)]">
                         <td className="px-5 py-3.5">
                           <p className="font-bold text-[var(--color-text-primary)]">{item.name}</p>
@@ -559,7 +540,8 @@ const Dashboard = () => {
                           <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass(item.status)}`}>{item.status}</span>
                         </td>
                       </tr>
-                    ))}
+                    ))} */}
+                    <tr><td colSpan="6"><EmptyState>Inventory snapshot is coming soon.</EmptyState></td></tr>
                   </tbody>
                 </table>
               </div>
@@ -568,7 +550,7 @@ const Dashboard = () => {
             <article className={`${PANEL} overflow-hidden`}>
               <SectionHeader icon={Warehouse} title="Storage Overview" text="Current utilization across laboratory locations." to="/locations" action="View locations" />
               <div className="space-y-5 p-4 sm:p-5">
-                {LOCATIONS.map((item) => (
+                {/* {LOCATIONS.map((item) => (
                   <div key={item.name}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
@@ -581,7 +563,8 @@ const Dashboard = () => {
                       <div className="h-full rounded-full bg-[var(--color-primary)]" style={{ width: `${item.usage}%` }} />
                     </div>
                   </div>
-                ))}
+                ))} */}
+                <EmptyState>Locations overview is coming soon.</EmptyState>
               </div>
             </article>
           </section>
@@ -590,7 +573,7 @@ const Dashboard = () => {
             <article className={`${PANEL} overflow-hidden`}>
               <SectionHeader icon={Clock3} title="Recent Usage Activity" text="Latest records inside the selected date range." to="/usage/batchwise" action="View all" />
               <div className="p-4 sm:p-5">
-                {filteredUsage.length ? (
+                {/* {filteredUsage.length ? (
                   <div className="space-y-1">
                     {filteredUsage.slice(0, 5).map((item) => (
                       <div key={item.id} className="flex gap-3 rounded-[var(--radius-sm)] px-2 py-3 hover:bg-[var(--color-primary-tint)]">
@@ -607,16 +590,16 @@ const Dashboard = () => {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <EmptyState>No recent usage activity is available.</EmptyState>
-                )}
+                ) : ( */}
+                  <EmptyState>Recent usage is coming soon.</EmptyState>
+                {/* )} */}
               </div>
             </article>
 
             <article className={`${PANEL} overflow-hidden`}>
               <SectionHeader icon={BarChart3} title="Top Chemical Usage" text="Highest issued quantities for the selected period." to="/reports/usage" action="Detailed report" />
               <div className="p-4 sm:p-5">
-                {report.top.length ? (
+                {/* {report.top.length ? (
                   <div className="space-y-5">
                     {report.top.map((item, index) => (
                       <div key={item.chemical}>
@@ -633,16 +616,16 @@ const Dashboard = () => {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <EmptyState>No usage ranking is available.</EmptyState>
-                )}
+                ) : ( */}
+                  <EmptyState>Top usage is coming soon.</EmptyState>
+                {/* )} */}
               </div>
             </article>
 
             <article className={`${PANEL} overflow-hidden`}>
               <SectionHeader icon={Bell} title="Alerts & Notifications" text="Items that need laboratory attention." to="/notifications" action="View all" />
               <div className="p-4 sm:p-5">
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   {ALERTS.map(({ id, title, text, label, color, Icon }) => (
                     <div key={id} className="flex gap-3 rounded-[var(--radius-sm)] border border-transparent p-2.5 hover:border-[var(--color-border)] hover:bg-[var(--color-surface-muted)]">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-surface-muted)]" style={{ color }}>
@@ -657,11 +640,12 @@ const Dashboard = () => {
                       </div>
                     </div>
                   ))}
-                </div>
+                </div> */}
                 <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-primary-tint)] px-3 py-2.5 text-xs font-semibold text-[var(--color-primary)]">
                   <CheckCircle2 size={16} />
                   Safety monitoring is active for all configured locations.
                 </div>
+                <EmptyState>Live alerts are coming soon.</EmptyState>
               </div>
             </article>
           </section>

@@ -1,4 +1,4 @@
-const { Batch, Chemical, Location, Dispose } = require('../models/index.js');
+const { Batch, Chemical, Location, Dispose, sequelize } = require('../models/index.js');
 const { Op } = require('sequelize');
 const {
   notifyExpiredBatches,
@@ -371,6 +371,81 @@ const getBatchById = async (req, res) => {
   }
 };
 
+const getBatchStats = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+    const lowStockCount = await Batch.count({
+      where: {
+        currentQuantity: { [Op.gt]: 0 },
+        [Op.and]: sequelize.where(
+          sequelize.col('current_quantity'),
+          '<=',
+          sequelize.col('low_stock_threshold_quantity')
+        )
+      },
+      include: [{
+        model: Chemical,
+        as: 'chemical',
+        where: { isActive: true },
+        attributes: []
+      }]
+    });
+
+    const expiringSoonCount = await Batch.count({
+      where: {
+        currentQuantity: { [Op.gt]: 0 },
+        expiryDate: {
+          [Op.ne]: null,
+          [Op.gte]: today,
+          [Op.lte]: thirtyDaysFromNow,
+        },
+      },
+      include: [{
+        model: Chemical,
+        as: 'chemical',
+        where: { isActive: true },
+        attributes: []
+      }]
+    });
+
+    const totalQuantities = await Batch.findOne({
+      attributes: [
+        [sequelize.fn('SUM', sequelize.col('quantity_received')), 'totalReceived'],
+        [sequelize.fn('SUM', sequelize.col('current_quantity')), 'totalCurrent'],
+      ],
+      include: [{
+        model: Chemical,
+        as: 'chemical',
+        where: { isActive: true },
+        attributes: []
+      }],
+      raw: true,
+    });
+
+    const totalReceived = Number(totalQuantities?.totalReceived || 0);
+    const totalUsed = totalReceived - Number(totalQuantities?.totalCurrent || 0);
+    const usagePercentage = totalReceived > 0 ? (totalUsed / totalReceived) * 100 : 0;
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        lowStock: lowStockCount,
+        expiringSoon: expiringSoonCount,
+        totalUsed,
+        totalReceived,
+        usagePercentage,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching batch stats:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching batch stats.' });
+  }
+};
+
 module.exports = {
   addBatch,
   getAllBatches,
@@ -378,4 +453,5 @@ module.exports = {
   updateBatch,
   checkExpiryNotifications,
   checkLowStockNotifications,
+  getBatchStats,
 };

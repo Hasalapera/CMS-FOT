@@ -15,6 +15,9 @@ const isAdminOrTO = (req, res, next) => {
   });
 };
 
+// Route to get dashboard stats for batches
+router.get('/stats', verifyToken, BatchController.getBatchStats);
+
 // Route to get all batches
 router.get('/', verifyToken, BatchController.getAllBatches);
 
