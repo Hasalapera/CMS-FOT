@@ -135,7 +135,7 @@ const MAIN_MENU_ITEMS = [
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
     children: [
       {
-        label: "Add New Stock",
+        label: "Add New Batch",
         path: "/stock/add",
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },

@@ -162,6 +162,7 @@ const EditChemicalModal = ({
     densityValue: "",
     densityUnit: "g/cm³",
     safetySummary: "",
+    sdsRevisionDate: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -194,6 +195,8 @@ const EditChemicalModal = ({
         chemical.densityUnit || "g/cm³",
       safetySummary:
         chemical.safetySummary || "",
+      sdsRevisionDate:
+        chemical.sdsRevisionDate || "",
     });
 
     setErrors({});
@@ -434,6 +437,9 @@ const EditChemicalModal = ({
 
     safetySummary:
       formData.safetySummary.trim() || null,
+
+    sdsRevisionDate:
+      formData.sdsRevisionDate || null,
   });
 
   const handleSubmit = async (event) => {
@@ -1149,6 +1155,24 @@ const EditChemicalModal = ({
                 </div>
 
                 <div className="mt-5">
+                  <div className="mb-5">
+                    <InputLabel
+                      htmlFor="sdsRevisionDateEdit"
+                      description="Use the revision or issue date printed on the SDS document."
+                    >
+                      SDS revision date
+                    </InputLabel>
+
+                    <input
+                      id="sdsRevisionDateEdit"
+                      name="sdsRevisionDate"
+                      type="date"
+                      value={formData.sdsRevisionDate}
+                      onChange={handleChange}
+                      className={commonInputClass}
+                    />
+                  </div>
+
                   <InputLabel
                     htmlFor="sdsFileEdit"
                     description="PDF, DOC or DOCX. Maximum file size 10 MB."

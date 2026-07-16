@@ -38,6 +38,7 @@ const INITIAL_FORM = {
   densityValue: "",
   densityUnit: "g/cm³",
   safetySummary: "",
+  sdsRevisionDate: "",
 };
 
 const STOCK_DIMENSION_OPTIONS = [
@@ -486,6 +487,7 @@ const AddChemical = () => {
       formData.densityValue === "" ? null : formData.densityUnit.trim(),
 
     safetySummary: formData.safetySummary.trim() ? formData.safetySummary.trim() : null,
+    sdsRevisionDate: formData.sdsRevisionDate || null,
   });
 
   const handleSubmit = async (event) => {
@@ -1326,6 +1328,34 @@ const AddChemical = () => {
                   </div>
 
                   <div className="mt-6">
+                    <div className="mb-5">
+                      <InputLabel
+                        htmlFor="sdsRevisionDate"
+                        description="Use the revision or issue date printed on the SDS document."
+                      >
+                        SDS revision date
+                      </InputLabel>
+
+                      <input
+                        id="sdsRevisionDate"
+                        name="sdsRevisionDate"
+                        type="date"
+                        value={formData.sdsRevisionDate}
+                        onChange={handleChange}
+                        className="
+                          w-full
+                          rounded-[var(--radius-md)]
+                          border border-[var(--color-border)]
+                          bg-[var(--color-surface)]
+                          px-4 py-3
+                          text-sm font-medium
+                          text-[var(--color-text-primary)]
+                          color-transition
+                          focus:border-[var(--color-primary)]
+                        "
+                      />
+                    </div>
+
                     <InputLabel
                       htmlFor="sdsFile"
                       description="Upload the Safety Data Sheet (PDF or Word, max 10MB)."

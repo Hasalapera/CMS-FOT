@@ -3,6 +3,26 @@ const { Op } = require('sequelize');
 const { logAction } = require("../services/auditLogService.js");
 const { createNotification } = require("../services/notificationService.js");
 const axios = require('axios');
+const crypto = require('crypto');
+const fs = require('fs/promises');
+
+const calculateFileChecksum = async (filePath) => {
+  const fileBuffer = await fs.readFile(filePath);
+  return crypto.createHash('sha256').update(fileBuffer).digest('hex');
+};
+
+const normalizeOptionalDate = (value) => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim();
+  return normalizedValue ? normalizedValue : null;
+};
 
 const getNextChemicalCode = async (req, res) => {
   try {
@@ -38,6 +58,8 @@ const addChemical = async (req, res) => {
       }
     }
 
+    payload.sdsRevisionDate = normalizeOptionalDate(payload.sdsRevisionDate);
+
     // Basic validation for required fields based on the model
     if (!payload.chemicalCode || !payload.canonicalName || !payload.stockDimension || !payload.baseUnit) {
       return res.status(400).json({ 
@@ -70,6 +92,7 @@ const addChemical = async (req, res) => {
       payload.sdsOriginalFilename = req.file.originalname;
       payload.sdsMimeType = req.file.mimetype;
       payload.sdsFileSize = req.file.size;
+      payload.sdsChecksum = await calculateFileChecksum(req.file.path);
       payload.sdsUploadedAt = new Date();
       payload.sdsUploadedById = req.user.id; // From verifyToken middleware
     }
@@ -266,6 +289,10 @@ const updateChemical = async (req, res) => {
       }
     }
 
+    if (Object.prototype.hasOwnProperty.call(payload, 'sdsRevisionDate')) {
+      payload.sdsRevisionDate = normalizeOptionalDate(payload.sdsRevisionDate);
+    }
+
     if (payload.canonicalName && payload.canonicalName.trim().toLowerCase() !== chemical.canonicalName.toLowerCase()) {
       const existingChemical = await Chemical.findOne({
         where: {
@@ -287,6 +314,7 @@ const updateChemical = async (req, res) => {
       payload.sdsOriginalFilename = req.file.originalname;
       payload.sdsMimeType = req.file.mimetype;
       payload.sdsFileSize = req.file.size;
+      payload.sdsChecksum = await calculateFileChecksum(req.file.path);
       payload.sdsUploadedAt = new Date();
       payload.sdsUploadedById = req.user.id;
     }
@@ -411,6 +439,9 @@ const getChemicalsWithSds = async (req, res) => {
         'sdsStorageKey',
         'sdsOriginalFilename',
         'sdsMimeType',
+        'sdsFileSize',
+        'sdsChecksum',
+        'sdsRevisionDate',
         'sdsUploadedAt',
       ],
     });
