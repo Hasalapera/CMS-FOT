@@ -346,7 +346,7 @@ const AddUsers = () => {
                       <InputLabel
                         htmlFor="role"
                         required
-                        description="Please Refer The Access Privileges Guide Before Select the Role."
+                        description="Determines what this account can access."
                       >
                         Role
                       </InputLabel>
@@ -384,6 +384,12 @@ const AddUsers = () => {
                           size={18}
                           className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
                         />
+                      </div>
+                      <div className="mt-2">
+                        <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-accent-dark)] bg-amber-50/70 dark:bg-amber-950/15 px-2 py-1 rounded border border-amber-200/50 text-[11px]">
+                          <Info size={12} className="shrink-0" />
+                          Refer the Access Privileges Guide before select a role.
+                        </span>
                       </div>
                       <ErrorMessage message={errors.role} />
                     </div>
