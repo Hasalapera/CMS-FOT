@@ -1,13 +1,9 @@
-const API_SERVER_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001').replace(/\/$/, '');
+const API_SERVER_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
 export const getSdsUrl = (storageKey) => {
-  if (!storageKey) return null;
-
-  if (/^https?:\/\//i.test(storageKey)) {
-    return storageKey;
+  if (!storageKey) {
+    return null;
   }
-
-  const filename = String(storageKey).split(/[\\/]/).filter(Boolean).pop();
-
-  return filename ? `${API_SERVER_URL}/uploads/sds/${encodeURIComponent(filename)}` : null;
+  // Construct the full URL to the SDS file on the backend
+  return `${API_SERVER_URL}/uploads/sds/${storageKey}`;
 };

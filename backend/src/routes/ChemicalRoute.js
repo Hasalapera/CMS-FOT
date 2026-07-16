@@ -8,6 +8,9 @@ const router = express.Router();
 // Route to get all chemicals
 router.get('/', verifyToken, ChemicalController.getAllChemicals);
 
+// Public route to get a selection of chemicals for the homepage
+router.get('/public', ChemicalController.getPublicChemicals);
+
 // Route to get the next auto-generated chemical code
 router.get('/get-next-code', verifyToken, ChemicalController.getNextChemicalCode);
 
@@ -27,7 +30,7 @@ router.post('/add-chemical', [verifyToken, uploadSds], ChemicalController.addChe
 router.put('/:id', [verifyToken, uploadSds], ChemicalController.updateChemical);
 
 // Route to get a single chemical by ID
-router.get('/:id', verifyToken, ChemicalController.getChemicalById);
+router.get('/:id', ChemicalController.getChemicalById);
 
 // Route to soft-delete (deactivate) a chemical
 router.delete('/:id', verifyToken, ChemicalController.softDeleteChemical);

@@ -1,4 +1,4 @@
-const { Chemical } = require('../models/index.js');
+const { Chemical, Batch, Location, sequelize } = require('../models/index.js');
 const { Op } = require('sequelize');
 const { logAction } = require("../services/auditLogService.js");
 const { createNotification } = require("../services/notificationService.js");
@@ -127,7 +127,9 @@ const addChemical = async (req, res) => {
 
 const getAllChemicals = async (req, res) => {
   try {
-    const chemicals = await Chemical.findAll({ // Only fetch active chemicals by default
+    // Only fetch active chemicals for the main list view
+    const chemicals = await Chemical.findAll({
+      where: { isActive: true },
       order: [['createdAt', 'DESC']],
     });
     res.status(200).json({
@@ -156,19 +158,79 @@ const getInactiveChemicals = async (req, res) => {
   }
 };
 
+const getPublicChemicals = async (req, res) => {
+  try {
+    const chemicals = await Chemical.findAll({
+      where: { isActive: true },
+      order: [['canonicalName', 'ASC']],
+      attributes: [
+        "id",
+        "chemicalCode",
+        "canonicalName",
+        "formula",
+        "physicalState",
+        "stockDimension",
+        "baseUnit",
+        "sdsStorageKey",
+        [
+          sequelize.literal(`(
+            SELECT COALESCE(SUM(b.current_quantity), 0)
+            FROM batches AS b
+            WHERE b.chemical_id = "Chemical"."id"
+          )`),
+          "totalStock",
+        ],
+      ],
+    });
+    res.status(200).json({
+      success: true,
+      chemicals,
+    });
+  } catch (error) {
+    console.error('Error fetching public chemicals:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching chemicals.' });
+  }
+};
+
+// Helper to build the location path
+const getLocationPath = async (locationId) => {
+  const path = [];
+  let currentLocation = await Location.findByPk(locationId, { attributes: ['id', 'name', 'parentLocationId'] });
+  while (currentLocation) {
+    path.unshift({ id: currentLocation.id, name: currentLocation.name });
+    currentLocation = currentLocation.parentLocationId
+      ? await Location.findByPk(currentLocation.parentLocationId, { attributes: ['id', 'name', 'parentLocationId'] })
+      : null;
+  }
+  return path;
+};
+
 const getChemicalById = async (req, res) => {
   try {
     const { id } = req.params;
-    const chemical = await Chemical.findByPk(id);
+    const chemical = await Chemical.findByPk(id, {
+      include: [{
+        model: Batch,
+        as: 'batches',
+        include: [{ model: Location, as: 'location', attributes: ['id', 'name'] }]
+      }],
+      order: [[{ model: Batch, as: 'batches' }, 'receivedDate', 'DESC']]
+    });
 
     if (!chemical) {
       return res.status(404).json({ success: false, message: 'Chemical not found.' });
     }
 
-    res.status(200).json({
-      success: true,
-      chemical,
-    });
+    const chemicalJson = chemical.toJSON();
+    if (chemicalJson.batches) {
+      for (const batch of chemicalJson.batches) {
+        if (batch.locationId) {
+          batch.locationPath = await getLocationPath(batch.locationId);
+        }
+      }
+    }
+
+    res.status(200).json({ success: true, chemical: chemicalJson });
   } catch (error) {
     console.error(`Error fetching chemical with ID ${req.params.id}:`, error);
     res.status(500).json({ success: false, message: 'Internal server error while fetching chemical details.' });
@@ -686,4 +748,5 @@ module.exports = {
   reactivateChemical,
   getChemicalDataByCas,
   getChemicalsWithSds,
+  getPublicChemicals,
 };

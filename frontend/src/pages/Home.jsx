@@ -1,10 +1,62 @@
 import React from "react";
-import { LogIn, Building2, Boxes } from "lucide-react";
+import { LogIn, Boxes, FlaskConical, Loader2, ServerCrash, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import api from "../api/axiosInstance";
+import ChemicalCard from "../components/Common/ChemicalCard";
+import LocationNode from "../components/locations/LocationNode";
+
+const PublicChemicalsList = () => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["publicChemicals"],
+    queryFn: async () => {
+      const response = await api.get("/chemicals/public");
+      return response.data.chemicals;
+    },
+  });
+
+  if (isLoading) {
+    return <div className="col-span-full flex items-center justify-center gap-2 py-10 text-[var(--color-text-muted)]"><Loader2 className="animate-spin" /> Loading available chemicals...</div>;
+  }
+
+  if (isError) {
+    return <div className="col-span-full flex items-center justify-center gap-2 py-10 text-[var(--color-danger)]"><ServerCrash /> Could not load chemicals.</div>;
+  }
+
+  return data.map((chemical) => <ChemicalCard key={chemical.id} chemical={chemical} isPublicView />);
+};
+
+const PublicLocationTree = () => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["publicLocationTree"],
+    queryFn: async () => {
+      const response = await api.get("/locations/public-tree");
+      return response.data.locations;
+    },
+  });
+
+  if (isLoading) {
+    return <div className="col-span-full flex items-center justify-center gap-2 py-10 text-[var(--color-text-muted)]"><Loader2 className="animate-spin" /> Loading storage locations...</div>;
+  }
+
+  if (isError) {
+    return <div className="col-span-full flex items-center justify-center gap-2 py-10 text-[var(--color-danger)]"><ServerCrash /> Could not load locations.</div>;
+  }
+
+  if (!data || data.length === 0) {
+    return <div className="col-span-full text-center py-10 text-[var(--color-text-muted)]">No storage locations have been defined yet.</div>;
+  }
+
+  return (
+    <div className="col-span-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
+      {data.map(node => (
+        <LocationNode key={node.id} node={node} isPublicView={true} />
+      ))}
+    </div>
+  );
+};
 
 const Home = () => {
-  const placeholderSlots = Array.from({ length: 8 });
-
   return (
     <div className="min-h-screen w-full flex flex-col bg-[var(--color-bg)] font-[family-name:var(--font-body)]">
       {/* ---------------- Header ---------------- */}
@@ -41,28 +93,30 @@ const Home = () => {
       {/* ---------------- Main content ---------------- */}
       <main className="flex-1 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="mb-8 sm:mb-10 text-center sm:text-left">
-            <h1 className="text-2xl sm:text-3xl font-medium text-[var(--color-text-primary)]">
-              Welcome to FLCMS
+          <div className="mb-8 sm:mb-10">
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-[var(--color-text-primary)] sm:text-3xl">
+              <FlaskConical size={28} className="text-[var(--color-primary)]" />
+              Available Chemicals
             </h1>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)] max-w-xl mx-auto sm:mx-0">
-              Faculty Laboratory Chemical Management System — an overview of
-              your labs, storage, and safety status at a glance.
-            </p>
           </div>
 
           {/* Placeholder grid — 2 rows x 4 cols, real cards to be added later */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5">
-            {placeholderSlots.map((_, i) => (
-              <div
-                key={i}
-                className="aspect-[4/5] rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)] flex flex-col items-center justify-center gap-2 text-[var(--color-text-muted)]"
-              >
-                <Boxes className="w-6 h-6" strokeWidth={1.5} />
-                <span className="text-xs font-medium">Component</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+            <PublicChemicalsList />
           </div>
+
+          {/* New Locations Section */}
+          <div className="mt-16 mb-8 sm:mb-10">
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-[var(--color-text-primary)] sm:text-3xl">
+              <MapPin size={28} className="text-[var(--color-primary)]" />
+              Storage Locations
+            </h1>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)] max-w-xl">
+              Browse the physical storage hierarchy and expand each location to see the chemicals stored there.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4"><PublicLocationTree /></div>
         </div>
       </main>
 

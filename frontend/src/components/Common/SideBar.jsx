@@ -191,12 +191,12 @@ const ADMIN_MENU_ITEMS = [
       },
     ],
   },
-  {
-    label: "Settings",
-    path: "/settings",
-    icon: Settings,
-    roles: ["ADMIN", "TECHNICAL_OFFICER"],
-  },
+  // {
+  //   label: "Settings",
+  //   path: "/settings",
+  //   icon: Settings,
+  //   roles: ["ADMIN", "TECHNICAL_OFFICER"],
+  // },
   {
     label: "Audit Logs",
     path: "/admin/audit-logs",
@@ -559,8 +559,8 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     closeMobileMenu();
+    navigate("/", { replace: true });
     logout();
-    navigate("/login", { replace: true });
   };
 
   return (
