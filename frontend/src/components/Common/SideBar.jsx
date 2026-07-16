@@ -21,7 +21,7 @@ import {
   ChevronRight,
   LogOut,
   ShieldCheck,
-  Recycle,
+  Pencil,
 } from "lucide-react";
 
 const ROLE_LABELS = {
@@ -62,7 +62,7 @@ const MAIN_MENU_ITEMS = [
     ],
   },
   {
-    label: "Usage",
+    label: "Usage Status",
     icon: Activity,
     pathPrefix: "/usage",
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
@@ -80,8 +80,8 @@ const MAIN_MENU_ITEMS = [
     ],
   },
   {
-    label: "Disposals",
-    icon: Recycle,
+    label: "Update Usage",
+    icon: Pencil,
     pathPrefix: "/disposals",
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
     children: [
@@ -91,7 +91,7 @@ const MAIN_MENU_ITEMS = [
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
       {
-        label: "Return and Disposal",
+        label: "Return Chemicals",
         path: "/disposal/return",
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
@@ -126,7 +126,7 @@ const MAIN_MENU_ITEMS = [
         path: "/sds/library",
         roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
       },
-    ]
+    ],
   },
   {
     label: "Procurement & Stock",
