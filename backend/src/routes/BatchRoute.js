@@ -4,6 +4,17 @@ const verifyToken = require('../middlewares/Authmiddleware.js');
 
 const router = express.Router();
 
+const isAdminOrTO = (req, res, next) => {
+  if (req.user.role === 'ADMIN' || req.user.role === 'TECHNICAL_OFFICER') {
+    return next();
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: 'Only admins and technical officers can update batches.',
+  });
+};
+
 // Route to get all batches
 router.get('/', verifyToken, BatchController.getAllBatches);
 
@@ -18,5 +29,8 @@ router.post('/low-stock-notifications/check', verifyToken, BatchController.check
 
 // Route to get a single batch by ID
 router.get('/:id', verifyToken, BatchController.getBatchById);
+
+// Route to update a batch
+router.put('/:id', verifyToken, isAdminOrTO, BatchController.updateBatch);
 
 module.exports = router;

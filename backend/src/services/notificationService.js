@@ -101,10 +101,10 @@ const getExpirySeverity = (daysUntilExpiry) => {
 };
 
 const isLowStockBatch = (batch) => {
-  const quantityReceived = Number(batch.quantityReceived);
   const currentQuantity = Number(batch.currentQuantity);
+  const thresholdQuantity = Number(batch.lowStockThresholdQuantity);
 
-  return quantityReceived > 0 && currentQuantity < quantityReceived * 0.2;
+  return Number.isFinite(thresholdQuantity) && thresholdQuantity >= 0 && currentQuantity <= thresholdQuantity;
 };
 
 const buildExpiryMessage = (batch, daysUntilExpiry) => {
@@ -229,11 +229,12 @@ const buildLowStockMessage = (batch) => {
   const unit = batch.chemical?.baseUnit ? ` ${batch.chemical.baseUnit}` : "";
   const quantityReceived = Number(batch.quantityReceived);
   const currentQuantity = Number(batch.currentQuantity);
+  const thresholdQuantity = Number(batch.lowStockThresholdQuantity);
   const remainingPercentage = quantityReceived > 0
     ? ((currentQuantity / quantityReceived) * 100).toFixed(1)
     : "0.0";
 
-  return `${chemicalName}${chemicalCode} batch ${batchNumber} is low on stock: ${currentQuantity}${unit} remaining from ${quantityReceived}${unit} (${remainingPercentage}%).`;
+  return `${chemicalName}${chemicalCode} batch ${batchNumber} is low on stock: ${currentQuantity}${unit} remaining from ${quantityReceived}${unit} (${remainingPercentage}%, threshold ${thresholdQuantity}${unit}).`;
 };
 
 const createLowStockNotifications = async (batches) => {

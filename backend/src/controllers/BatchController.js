@@ -1,4 +1,4 @@
-const { Batch, Chemical, Location } = require('../models/index.js');
+const { Batch, Chemical, Location, Dispose } = require('../models/index.js');
 const { Op } = require('sequelize');
 const {
   notifyExpiringBatches,
@@ -42,6 +42,7 @@ const addBatch = async (req, res) => {
       batchNumber,
       quantityReceived,
       currentQuantity,
+      lowStockThresholdQuantity,
       expiryDate,
       receivedDate,
       locationId,
@@ -52,6 +53,30 @@ const addBatch = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Chemical, Batch Number, Quantity, and Received Date are required.',
+      });
+    }
+
+    const thresholdQuantity = Number(lowStockThresholdQuantity);
+    const receivedQuantity = Number(quantityReceived);
+
+    if (lowStockThresholdQuantity === undefined || lowStockThresholdQuantity === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Low stock threshold quantity is required.',
+      });
+    }
+
+    if (Number.isNaN(thresholdQuantity) || thresholdQuantity < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Low stock threshold quantity must be zero or greater.',
+      });
+    }
+
+    if (!Number.isNaN(receivedQuantity) && thresholdQuantity > receivedQuantity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Low stock threshold quantity cannot be greater than the received quantity.',
       });
     }
 
@@ -71,6 +96,7 @@ const addBatch = async (req, res) => {
       batchNumber: batchNumber.trim(),
       quantityReceived,
       currentQuantity,
+      lowStockThresholdQuantity: thresholdQuantity,
       expiryDate: expiryDate || null,
       receivedDate,
       locationId: locationId || null,
@@ -153,6 +179,123 @@ const checkExpiryNotifications = async (req, res) => {
   }
 };
 
+const updateBatch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      supplier,
+      batchNumber,
+      quantityReceived,
+      currentQuantity,
+      lowStockThresholdQuantity,
+      expiryDate,
+      receivedDate,
+      locationId,
+    } = req.body;
+
+    const batch = await Batch.findByPk(id);
+
+    if (!batch) {
+      return res.status(404).json({ success: false, message: 'Batch not found.' });
+    }
+
+    if (!batchNumber || !quantityReceived || currentQuantity === undefined || !receivedDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Batch Number, Quantity Received, Current Quantity, and Received Date are required.',
+      });
+    }
+
+    const receivedQuantity = Number(quantityReceived);
+    const availableQuantity = Number(currentQuantity);
+    const thresholdQuantity = Number(lowStockThresholdQuantity);
+
+    if (Number.isNaN(receivedQuantity) || receivedQuantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity received must be greater than zero.',
+      });
+    }
+
+    if (Number.isNaN(availableQuantity) || availableQuantity < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current quantity must be zero or greater.',
+      });
+    }
+
+    if (availableQuantity > receivedQuantity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current quantity cannot be greater than quantity received.',
+      });
+    }
+
+    if (lowStockThresholdQuantity === undefined || lowStockThresholdQuantity === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Low stock threshold quantity is required.',
+      });
+    }
+
+    if (Number.isNaN(thresholdQuantity) || thresholdQuantity < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Low stock threshold quantity must be zero or greater.',
+      });
+    }
+
+    if (thresholdQuantity > receivedQuantity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Low stock threshold quantity cannot be greater than the received quantity.',
+      });
+    }
+
+    await batch.update({
+      supplier: supplier?.trim() || null,
+      batchNumber: batchNumber.trim(),
+      quantityReceived: receivedQuantity,
+      currentQuantity: availableQuantity,
+      lowStockThresholdQuantity: thresholdQuantity,
+      expiryDate: expiryDate || null,
+      receivedDate,
+      locationId: locationId || null,
+    });
+
+    await notifyExpiringBatches();
+    await notifyLowStockBatch(batch.id);
+
+    const updatedBatch = await Batch.findByPk(id, {
+      include: [
+        {
+          model: Chemical,
+          as: 'chemical',
+          attributes: ['canonicalName', 'chemicalCode', 'baseUnit'],
+        },
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['name'],
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Batch updated successfully.',
+      batch: updatedBatch,
+    });
+  } catch (error) {
+    console.error(`Error updating batch with ID ${req.params.id}:`, error);
+    if (error.name === 'SequelizeValidationError') {
+      const messages = error.errors.map(e => e.message);
+      return res.status(400).json({ success: false, message: messages.join('. ') });
+    }
+    res.status(500).json({ success: false, message: 'Internal server error while updating the batch.' });
+  }
+};
+
 const getLocationPath = async (locationId, LocationModel) => {
   const path = [];
   let currentLocation = await LocationModel.findByPk(locationId, { attributes: ['id', 'name', 'parentLocationId'] });
@@ -187,15 +330,34 @@ const getBatchById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Batch not found.' });
     }
 
+    const batchJson = batch.toJSON();
+    batchJson.usages = await Dispose.findAll({
+      where: { batchNumber: batch.batchNumber },
+      attributes: [
+        'id',
+        'chemicalCode',
+        'chemicalName',
+        'batchNumber',
+        'quantityUsed',
+        'dateReleased',
+        'dateReturned',
+        'purpose',
+        'stuRegisterNum',
+        'userName',
+        'remark',
+        'returnedStatus',
+      ],
+      order: [['dateReleased', 'DESC']],
+    });
+
     // If a location is associated, fetch its full path
     if (batch.location) {
       const path = await getLocationPath(batch.location.id, Location);
-      const batchJson = batch.toJSON();
       batchJson.location.path = path;
       return res.status(200).json({ success: true, batch: batchJson });
     }
 
-    return res.status(200).json({ success: true, batch });
+    return res.status(200).json({ success: true, batch: batchJson });
   } catch (error) {
     console.error(`Error fetching batch with ID ${req.params.id}:`, error);
     res.status(500).json({ success: false, message: 'Internal server error while fetching batch details.' });
@@ -206,6 +368,7 @@ module.exports = {
   addBatch,
   getAllBatches,
   getBatchById,
+  updateBatch,
   checkExpiryNotifications,
   checkLowStockNotifications,
 };

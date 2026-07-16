@@ -169,6 +169,7 @@ const getPublicChemicals = async (req, res) => {
         "canonicalName",
         "formula",
         "physicalState",
+        "hazardCategory",
         "stockDimension",
         "baseUnit",
         "sdsStorageKey",
@@ -242,16 +243,17 @@ const updateChemical = async (req, res) => {
   try {
     const chemical = await Chemical.findByPk(id);
 
+    if (!chemical) {
+      return res.status(404).json({ success: false, message: 'Chemical not found.' });
+    }
+
     // Store the state *before* the update for the audit log
     const beforeUpdate = {
       canonicalName: chemical.canonicalName,
       casNumber: chemical.casNumber,
+      hazardCategory: chemical.hazardCategory,
       isActive: chemical.isActive,
     };
-
-    if (!chemical) {
-      return res.status(404).json({ success: false, message: 'Chemical not found.' });
-    }
 
     const payload = { ...req.body };
 

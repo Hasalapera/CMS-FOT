@@ -45,6 +45,20 @@ const PHYSICAL_STATE_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
+const HAZARD_CATEGORY_OPTIONS = [
+  { value: "NONE", label: "None / Not classified" },
+  { value: "FLAMMABLE", label: "Flammable" },
+  { value: "CORROSIVE", label: "Corrosive" },
+  { value: "TOXIC", label: "Toxic" },
+  { value: "OXIDIZER", label: "Oxidizer" },
+  { value: "EXPLOSIVE", label: "Explosive" },
+  { value: "IRRITANT", label: "Irritant" },
+  { value: "ENVIRONMENTAL", label: "Environmental hazard" },
+  { value: "COMPRESSED_GAS", label: "Compressed gas" },
+  { value: "HEALTH_HAZARD", label: "Health hazard" },
+  { value: "OTHER", label: "Other hazard" },
+];
+
 const BASE_UNIT_OPTIONS = {
   MASS: ["mg", "g", "kg"],
   VOLUME: ["µL", "mL", "L"],
@@ -143,6 +157,7 @@ const EditChemicalModal = ({
     casNumber: "",
     formula: "",
     physicalState: "LIQUID",
+    hazardCategory: "NONE",
     synonyms: [""],
     densityValue: "",
     densityUnit: "g/cm³",
@@ -167,6 +182,8 @@ const EditChemicalModal = ({
       formula: chemical.formula || "",
       physicalState:
         chemical.physicalState || "LIQUID",
+      hazardCategory:
+        chemical.hazardCategory || "NONE",
       synonyms:
         Array.isArray(chemical.synonyms) &&
         chemical.synonyms.length > 0
@@ -397,6 +414,9 @@ const EditChemicalModal = ({
 
     physicalState:
       formData.physicalState || null,
+
+    hazardCategory:
+      formData.hazardCategory || "NONE",
 
     synonyms: formData.synonyms
       .map((synonym) => synonym.trim())
@@ -1071,6 +1091,46 @@ const EditChemicalModal = ({
                   title="Safety and SDS"
                   description="Update the quick safety summary or replace the current SDS."
                 />
+
+                <div className="mb-5">
+                  <InputLabel
+                    htmlFor="hazardCategory"
+                    description="Select the primary hazard category for this chemical."
+                  >
+                    Hazard category
+                  </InputLabel>
+
+                  <div className="relative">
+                    <select
+                      id="hazardCategory"
+                      name="hazardCategory"
+                      value={formData.hazardCategory}
+                      onChange={handleChange}
+                      className={`${commonInputClass} appearance-none pr-10`}
+                    >
+                      {HAZARD_CATEGORY_OPTIONS.map(
+                        (option) => (
+                          <option
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </option>
+                        )
+                      )}
+                    </select>
+
+                    <ChevronDown
+                      size={18}
+                      className="
+                        pointer-events-none
+                        absolute right-3 top-1/2
+                        -translate-y-1/2
+                        text-[var(--color-text-muted)]
+                      "
+                    />
+                  </div>
+                </div>
 
                 <div>
                   <InputLabel htmlFor="safetySummary">
