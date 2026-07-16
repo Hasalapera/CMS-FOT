@@ -1,6 +1,7 @@
 const { Batch, Chemical, Location, Dispose } = require('../models/index.js');
 const { Op } = require('sequelize');
 const {
+  notifyExpiredBatches,
   notifyExpiringBatches,
   notifyLowStockBatch,
   notifyLowStockBatches,
@@ -102,6 +103,7 @@ const addBatch = async (req, res) => {
       locationId: locationId || null,
     });
 
+    await notifyExpiredBatches();
     await notifyExpiringBatches();
     await notifyLowStockBatch(newBatch.id);
 
@@ -159,9 +161,10 @@ const checkExpiryNotifications = async (req, res) => {
       });
     }
 
-    const result = await notifyExpiringBatches();
+    const expiredResult = await notifyExpiredBatches();
+    const expiryResult = await notifyExpiringBatches();
 
-    if (result.error) {
+    if (expiredResult.error || expiryResult.error) {
       return res.status(500).json({
         success: false,
         message: 'Expiry notification check failed.',
@@ -171,7 +174,10 @@ const checkExpiryNotifications = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Expiry notification check completed.',
-      result,
+      result: {
+        expired: expiredResult,
+        expiring: expiryResult,
+      },
     });
   } catch (error) {
     console.error('Error checking expiry notifications:', error);
@@ -263,6 +269,7 @@ const updateBatch = async (req, res) => {
       locationId: locationId || null,
     });
 
+    await notifyExpiredBatches();
     await notifyExpiringBatches();
     await notifyLowStockBatch(batch.id);
 

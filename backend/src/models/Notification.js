@@ -21,6 +21,7 @@ module.exports = function NotificationModel(sequelize) {
         type: DataTypes.ENUM(
           'LOW_STOCK',
           'EXPIRY_ALERT',
+          'EXPIRED_CHEMICAL',
           'NEW_USER_ADDED',
           'NEW_CHEMICAL_ADDED',
           'SDS_UPDATED',

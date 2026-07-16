@@ -385,7 +385,7 @@ const ViewAllBatches = () => {
   useEffect(() => {
     const fetchBatches = async () => {
       try {
-        setLoading(true);
+        setLoading((previous) => previous || batches.length === 0);
         setError(null);
         const response = await api.get('/batches');
         if (response.data?.success) {
@@ -402,7 +402,10 @@ const ViewAllBatches = () => {
     };
 
     fetchBatches();
-  }, []);
+    const refreshTimer = window.setInterval(fetchBatches, 30000);
+
+    return () => window.clearInterval(refreshTimer);
+  }, [batches.length]);
 
   const filteredBatches = useMemo(() =>
     batches.filter(batch =>

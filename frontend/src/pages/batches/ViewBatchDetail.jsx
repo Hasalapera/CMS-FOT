@@ -191,9 +191,11 @@ const ViewBatchDetail = () => {
   };
 
   useEffect(() => {
-    const fetchBatch = async () => {
+    const fetchBatch = async ({ silent = false } = {}) => {
       try {
-        setLoading(true);
+        if (!silent) {
+          setLoading(true);
+        }
         setError(null);
 
         const response = await api.get(`/batches/${id}`);
@@ -215,6 +217,9 @@ const ViewBatchDetail = () => {
     };
 
     fetchBatch();
+    const refreshTimer = window.setInterval(() => fetchBatch({ silent: true }), 30000);
+
+    return () => window.clearInterval(refreshTimer);
   }, [id]);
 
   if (loading) {

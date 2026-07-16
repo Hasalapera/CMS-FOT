@@ -20,6 +20,7 @@ const usageRoutes = require("./routes/UsageRoute.js");
 const notificationRoutes = require("./routes/NotificationRoute.js");
 const reportRoutes = require("./routes/ReportRoute.js");
 const {
+  notifyExpiredBatches,
   notifyExpiringBatches,
   notifyLowStockBatches,
 } = require("./services/notificationService.js");
@@ -84,8 +85,15 @@ const startExpiryNotificationScheduler = () => {
   const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
 
   const runExpiryNotificationCheck = async () => {
+    const expiredResult = await notifyExpiredBatches();
     const expiryResult = await notifyExpiringBatches();
     const lowStockResult = await notifyLowStockBatches();
+
+    if (!expiredResult.error) {
+      console.log(
+        `[NotificationService] Expired batch check completed. Created ${expiredResult.createdNotifications || 0} notifications.`,
+      );
+    }
 
     if (!expiryResult.error) {
       console.log(

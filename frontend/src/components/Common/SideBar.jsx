@@ -506,7 +506,7 @@ const Sidebar = () => {
     select: (res) => res.data.count,
     enabled:
       !!user && (user.role === "ADMIN" || user.role === "TECHNICAL_OFFICER"),
-    refetchInterval: 60000, // Refetch every 60 seconds
+    refetchInterval: 15000,
   });
 
   const [mobileOpen, setMobileOpen] = useState(false);

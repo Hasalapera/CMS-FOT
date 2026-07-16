@@ -121,6 +121,103 @@ const buildExpiryMessage = (batch, daysUntilExpiry) => {
   return `${chemicalName}${chemicalCode} batch ${batchNumber} will expire in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"} on ${batch.expiryDate}.${quantity}`;
 };
 
+const buildExpiredMessage = (batch, daysExpired) => {
+  const chemicalName = batch.chemical?.canonicalName || "Unknown chemical";
+  const chemicalCode = batch.chemical?.chemicalCode ? ` (${batch.chemical.chemicalCode})` : "";
+  const batchNumber = batch.batchNumber || "N/A";
+  const unit = batch.chemical?.baseUnit ? ` ${batch.chemical.baseUnit}` : "";
+  const quantity = batch.currentQuantity ? ` Current stock: ${batch.currentQuantity}${unit}.` : "";
+  const expiredFor = daysExpired === 0
+    ? "expired today"
+    : `expired ${daysExpired} day${daysExpired === 1 ? "" : "s"} ago`;
+
+  return `${chemicalName}${chemicalCode} batch ${batchNumber} ${expiredFor} on ${batch.expiryDate}.${quantity}`;
+};
+
+const notifyExpiredBatches = async () => {
+  try {
+    const today = new Date();
+    const todayDateOnly = toDateOnlyString(today);
+
+    const notifiableUsers = await getNotifiableUsers();
+    if (notifiableUsers.length === 0) {
+      return { checkedBatches: 0, expiredBatches: 0, createdNotifications: 0 };
+    }
+
+    const expiredBatches = await Batch.findAll({
+      where: {
+        expiryDate: {
+          [Op.lt]: todayDateOnly,
+        },
+        currentQuantity: {
+          [Op.gt]: 0,
+        },
+      },
+      include: [
+        {
+          model: Chemical,
+          as: "chemical",
+          attributes: ["canonicalName", "chemicalCode", "baseUnit", "isActive"],
+          where: { isActive: true },
+        },
+      ],
+    });
+
+    if (expiredBatches.length === 0) {
+      return { checkedBatches: 0, expiredBatches: 0, createdNotifications: 0 };
+    }
+
+    const existingNotifications = await Notification.findAll({
+      where: {
+        type: "EXPIRED_CHEMICAL",
+        entityType: "Batch",
+        entityId: {
+          [Op.in]: expiredBatches.map((batch) => batch.id),
+        },
+        userId: {
+          [Op.in]: notifiableUsers.map((user) => user.id),
+        },
+      },
+      attributes: ["userId", "entityId"],
+    });
+
+    const existingKeys = new Set(
+      existingNotifications.map((notification) => `${notification.userId}:${notification.entityId}`),
+    );
+
+    const notificationsToCreate = expiredBatches.flatMap((batch) => {
+      const daysExpired = Math.abs(getDateOnlyDiffInDays(todayDateOnly, batch.expiryDate));
+      const message = buildExpiredMessage(batch, daysExpired);
+
+      return notifiableUsers
+        .filter((user) => !existingKeys.has(`${user.id}:${batch.id}`))
+        .map((user) => ({
+          userId: user.id,
+          type: "EXPIRED_CHEMICAL",
+          severity: "CRITICAL",
+          message,
+          entityType: "Batch",
+          entityId: batch.id,
+        }));
+    });
+
+    if (notificationsToCreate.length > 0) {
+      await Notification.bulkCreate(notificationsToCreate);
+    }
+
+    return {
+      checkedBatches: expiredBatches.length,
+      expiredBatches: expiredBatches.length,
+      createdNotifications: notificationsToCreate.length,
+    };
+  } catch (error) {
+    console.error("--- FAILED TO CREATE EXPIRED BATCH NOTIFICATIONS ---");
+    console.error("Error details:", error);
+    console.error("----------------------------------------------------");
+    return { checkedBatches: 0, expiredBatches: 0, createdNotifications: 0, error };
+  }
+};
+
 const notifyExpiringBatches = async () => {
   try {
     const today = new Date();
@@ -343,6 +440,7 @@ const notifyLowStockBatches = async () => {
 
 module.exports = {
   createNotification,
+  notifyExpiredBatches,
   notifyExpiringBatches,
   notifyLowStockBatch,
   notifyLowStockBatches,
