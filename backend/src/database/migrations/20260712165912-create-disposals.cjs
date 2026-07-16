@@ -61,15 +61,9 @@ module.exports = {
         allowNull: false,
       },
 
-      user_id: {
-        type: Sequelize.UUID,
+      stu_register_num: {
+        type: Sequelize.STRING(50),
         allowNull: false,
-        references: {
-          model: "users",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "RESTRICT", // Don't allow user deletion if they have disposal records
       },
 
       user_name: {

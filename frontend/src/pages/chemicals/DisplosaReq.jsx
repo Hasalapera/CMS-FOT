@@ -25,7 +25,7 @@ const INITIAL_FORM = {
   batchNumber: "",
   dateReleased: "",
   purpose: "",
-  userId: "",
+  stuRegisterNum: "",
   userName: "",
   remark: "",
 };
@@ -280,8 +280,7 @@ const DisplosaReq = () => {
             sublabel: (() => {
               const qty = parseFloat(b.currentQuantity);
               const unit = b.chemical?.baseUnit ?? "";
-              const formatted =
-                qty % 1 === 0 ? `${qty.toFixed(0)}` : `${qty}`;
+              const formatted = qty % 1 === 0 ? `${qty.toFixed(0)}` : `${qty}`;
               return `${formatted}${unit ? ` ${unit}` : ""} available${b.expiryDate ? ` · Expires ${b.expiryDate}` : ""}`;
             })(),
           })),
@@ -327,7 +326,8 @@ const DisplosaReq = () => {
       nextErrors.dateReleased = "Release date is required.";
     if (!form.purpose.trim())
       nextErrors.purpose = "Purpose of release is required.";
-    if (!form.userId.trim()) nextErrors.userId = "User ID is required.";
+    if (!form.stuRegisterNum.trim())
+      nextErrors.stuRegisterNum = "Student registration number is required.";
     if (!form.userName.trim()) nextErrors.userName = "User name is required.";
 
     setErrors(nextErrors);
@@ -548,11 +548,11 @@ const DisplosaReq = () => {
 
                     <div>
                       <InputLabel
-                        htmlFor="userId"
+                        htmlFor="stuRegisterNum"
                         required
-                        description="The ID of the student this release is issued to."
+                        description="The registration number of the student this release is issued to."
                       >
-                        User ID
+                        Student Registration Number
                       </InputLabel>
                       <div className="relative">
                         <User
@@ -560,19 +560,19 @@ const DisplosaReq = () => {
                           className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
                         />
                         <input
-                          id="userId"
+                          id="stuRegisterNum  "
                           type="text"
-                          value={form.userId}
-                          onChange={handleFieldChange("userId")}
-                          placeholder="Enter user ID"
+                          value={form.stuRegisterNum}
+                          onChange={handleFieldChange("stuRegisterNum")}
+                          placeholder="Enter student registration number"
                           className={`w-full rounded-[var(--radius-md)] border bg-[var(--color-surface)] py-3 pl-10 pr-4 text-sm font-medium text-[var(--color-text-primary)] color-transition placeholder:text-[var(--color-text-muted)] ${
-                            errors.userId
+                            errors.stuRegisterNum
                               ? "border-[var(--color-danger)]"
                               : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
                           }`}
                         />
                       </div>
-                      <ErrorMessage message={errors.userId} />
+                      <ErrorMessage message={errors.stuRegisterNum} />
                     </div>
 
                     <div>

@@ -34,12 +34,18 @@ const daysSince = (value) => {
   // Parse as local date to avoid UTC offset shifting the date
   const parts = String(value).slice(0, 10).split("-");
   if (parts.length !== 3) return null;
-  const released = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  const released = new Date(
+    Number(parts[0]),
+    Number(parts[1]) - 1,
+    Number(parts[2]),
+  );
   if (Number.isNaN(released.getTime())) return null;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   released.setHours(0, 0, 0, 0);
-  return Math.floor((today.getTime() - released.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor(
+    (today.getTime() - released.getTime()) / (1000 * 60 * 60 * 24),
+  );
 };
 
 const OverdueBadge = ({ dateReleased }) => {
@@ -79,7 +85,8 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
   const densityUnit = chemicalInfo.densityUnit || null;
   const stockDimension = chemicalInfo.stockDimension || null;
   const physicalState = chemicalInfo.physicalState || null;
-  const baseUnit = chemicalInfo.baseUnit || record.unit || record.baseUnit || "";
+  const baseUnit =
+    chemicalInfo.baseUnit || record.unit || record.baseUnit || "";
 
   const canUseMassInput =
     physicalState === "LIQUID" && densityValue && densityValue > 0;
@@ -173,7 +180,7 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
               <User size={13} />
               {record.userName}
               <span className="text-[var(--color-text-muted)]">
-                ({record.userId})
+                ({record.stuRegisterNum})
               </span>
             </span>
             {baseUnit && (
@@ -245,26 +252,36 @@ const ReturnModal = ({ record, onClose, onSuccess }) => {
               </div>
 
               {/* Live conversion preview */}
-              {inputUnit === "g" && canUseMassInput && computedVolume !== null && (
-                <div className="mt-2 flex items-start gap-2 rounded-[var(--radius-sm)] border border-[var(--color-primary)]/30 bg-[var(--color-primary-tint)] px-3 py-2 text-xs">
-                  <Info size={13} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
-                  <div className="text-[var(--color-text-secondary)]">
-                    <span className="font-semibold text-[var(--color-text-primary)]">
-                      {computedVolume.toFixed(4)} {baseUnit}
-                    </span>{" "}
-                    will be deducted from stock
-                    <span className="block text-[10px] text-[var(--color-text-muted)]">
-                      {usageQty} g ÷ {densityValue} ({densityUnit || "density"}) = {computedVolume.toFixed(4)} {baseUnit}
-                    </span>
+              {inputUnit === "g" &&
+                canUseMassInput &&
+                computedVolume !== null && (
+                  <div className="mt-2 flex items-start gap-2 rounded-[var(--radius-sm)] border border-[var(--color-primary)]/30 bg-[var(--color-primary-tint)] px-3 py-2 text-xs">
+                    <Info
+                      size={13}
+                      className="mt-0.5 shrink-0 text-[var(--color-primary)]"
+                    />
+                    <div className="text-[var(--color-text-secondary)]">
+                      <span className="font-semibold text-[var(--color-text-primary)]">
+                        {computedVolume.toFixed(4)} {baseUnit}
+                      </span>{" "}
+                      will be deducted from stock
+                      <span className="block text-[10px] text-[var(--color-text-muted)]">
+                        {usageQty} g ÷ {densityValue} (
+                        {densityUnit || "density"}) ={" "}
+                        {computedVolume.toFixed(4)} {baseUnit}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {inputUnit === "native" && usageQty !== "" && computedVolume !== null && (
-                <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
-                  {computedVolume.toFixed(4)} {baseUnit} will be deducted from stock.
-                </p>
-              )}
+              {inputUnit === "native" &&
+                usageQty !== "" &&
+                computedVolume !== null && (
+                  <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                    {computedVolume.toFixed(4)} {baseUnit} will be deducted from
+                    stock.
+                  </p>
+                )}
             </div>
 
             {/* Return Date */}
@@ -545,7 +562,7 @@ const ReturnedPage = () => {
                               size={13}
                               className="text-[var(--color-text-muted)]"
                             />
-                            {record.userName} ({record.userId})
+                            {record.userName} ({record.stuRegisterNum})
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Calendar

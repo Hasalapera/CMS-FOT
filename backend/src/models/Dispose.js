@@ -51,11 +51,11 @@ module.exports = function DisposeModel(sequelize) {
         allowNull: false,
       },
 
-      userId: {
-        type: DataTypes.UUID,
+      stuRegisterNum: {
+        type: DataTypes.STRING(50),
         allowNull: false,
-        field: "user_id",
-        comment: "Foreign key to the users table",
+        field: "stu_register_num",
+        comment: "Student registration number",
       },
 
       userName: {
@@ -70,7 +70,7 @@ module.exports = function DisposeModel(sequelize) {
       },
 
       returnedStatus: {
-        type: DataTypes.ENUM("RELEASED", "RETURNED", "DISPOSED"),
+        type: DataTypes.ENUM("RELEASED", "RETURNED"),
         allowNull: false,
         defaultValue: "RELEASED",
         field: "returned_status",
