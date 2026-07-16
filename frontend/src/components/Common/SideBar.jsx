@@ -36,18 +36,18 @@ const MAIN_MENU_ITEMS = [
     label: "Dashboard",
     path: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
   },
   {
     label: "Chemicals",
     icon: FlaskConical,
     pathPrefix: "/chemicals",
-    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
     children: [
       {
         label: "View All Chemicals",
         path: "/chemicals/list",
-        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
       },
       {
         label: "Add New Chemical",
@@ -119,12 +119,12 @@ const MAIN_MENU_ITEMS = [
     label: "SDS Library",
     pathPrefix: "/sds",
     icon: FileText,
-    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
     children: [
       {
         label: "View SDS",
         path: "/sds/library",
-        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
       },
     ],
   },
@@ -191,12 +191,6 @@ const ADMIN_MENU_ITEMS = [
       },
     ],
   },
-  // {
-  //   label: "Settings",
-  //   path: "/settings",
-  //   icon: Settings,
-  //   roles: ["ADMIN", "TECHNICAL_OFFICER"],
-  // },
   {
     label: "Audit Logs",
     path: "/admin/audit-logs",
