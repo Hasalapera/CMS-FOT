@@ -1,4 +1,4 @@
-const { Location, Batch, Chemical } = require('../models/index.js');
+const { Location, Batch, Chemical, sequelize } = require('../models/index.js');
 const { Op } = require('sequelize');
 const { logAction } = require('../services/auditLogService.js');
 
@@ -125,8 +125,59 @@ const getLocationById = async (req, res) => {
   }
 };
 
+const getPublicLocationTree = async (req, res) => {
+  try {
+    const locations = await Location.findAll({
+      attributes: ['id', 'name', 'type', 'parentLocationId'],
+      order: [['name', 'ASC']],
+    });
+
+    const batches = await Batch.findAll({
+      where: {
+        locationId: { [Op.ne]: null },
+        currentQuantity: { [Op.gt]: 0 }
+      },
+      attributes: ['id', 'batchNumber', 'currentQuantity', 'locationId'],
+      include: [{
+        model: Chemical,
+        as: 'chemical',
+        attributes: ['id', 'canonicalName', 'chemicalCode', 'baseUnit'],
+        where: { isActive: true },
+        required: true
+      }]
+    });
+
+    const locationMap = {};
+    const tree = [];
+
+    locations.forEach(location => {
+      locationMap[location.id] = { ...location.toJSON(), children: [], batches: [] };
+    });
+
+    batches.forEach(batch => {
+      if (locationMap[batch.locationId]) {
+        locationMap[batch.locationId].batches.push(batch.toJSON());
+      }
+    });
+
+    Object.values(locationMap).forEach(location => {
+      if (location.parentLocationId && locationMap[location.parentLocationId]) {
+        locationMap[location.parentLocationId].children.push(location);
+      } else {
+        tree.push(location);
+      }
+    });
+
+    res.status(200).json({ success: true, locations: tree });
+  } catch (error) {
+    console.error('Error fetching public location tree:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching locations.' });
+  }
+};
+
 module.exports = {
   getAllLocations,
   addLocation,
   getLocationById,
+  getPublicLocationTree,
 };

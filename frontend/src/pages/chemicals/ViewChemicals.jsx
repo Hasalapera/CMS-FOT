@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FlaskConical, Plus, Loader2, ServerCrash, Search } from 'lucide-react';
+import { FlaskConical, Plus, Loader2, ServerCrash, Search, Trash2 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import ChemicalCard from '../../components/Common/ChemicalCard';
 import EditChemicalModal from '../../components/chemicals/EditChemicalModal';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import DeleteConfirmationModal from '../../components/Common/DeleteConfirmationModal';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 
 const ViewChemicals = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingChemical, setEditingChemical] = useState(null);
+  const [deletingChemical, setDeletingChemical] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: chemicals = [], isLoading: loading, isError, error } = useQuery({
@@ -22,7 +24,22 @@ const ViewChemicals = () => {
     },
   });
 
-  const filteredChemicals = (chemicals || []).filter(
+  const deleteMutation = useMutation({
+    mutationFn: (chemicalId) => api.delete(`/chemicals/${chemicalId}`),
+    onSuccess: () => {
+      // Refetch the list of active chemicals
+      queryClient.invalidateQueries({ queryKey: ['chemicals'] });
+      // Also refetch the list of deactivated chemicals for the other page
+      queryClient.invalidateQueries({ queryKey: ['deactivatedChemicals'] });
+      setDeletingChemical(null);
+    },
+    onError: (error) => {
+      // You can add a toast notification here to show the error
+      console.error("Failed to deactivate chemical:", error);
+    }
+  });
+
+  const filteredChemicals = chemicals.filter(
     (chemical) =>
       chemical.canonicalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       chemical.chemicalCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -31,6 +48,10 @@ const ViewChemicals = () => {
 
   const handleEditClick = (chemical) => {
     setEditingChemical(chemical);
+  };
+
+  const handleDeleteClick = (chemical) => {
+    setDeletingChemical(chemical);
   };
 
   const handleCloseModal = () => {
@@ -76,7 +97,12 @@ const ViewChemicals = () => {
     return (
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredChemicals.map((chemical) => (
-          <ChemicalCard key={chemical.id} chemical={chemical} onEdit={handleEditClick} />
+          <ChemicalCard
+            key={chemical.id}
+            chemical={chemical}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+          />
         ))}
       </div>
     );
@@ -145,6 +171,17 @@ const ViewChemicals = () => {
               chemical={editingChemical}
               onClose={handleCloseModal}
               onSuccess={handleUpdateSuccess}
+            />
+          )}
+          {deletingChemical && (
+            <DeleteConfirmationModal
+              isOpen={!!deletingChemical}
+              onClose={() => setDeletingChemical(null)}
+              onConfirm={() => deleteMutation.mutate(deletingChemical.id)}
+              isProcessing={deleteMutation.isPending}
+              title="Deactivate Chemical"
+              message={`Are you sure you want to deactivate "${deletingChemical.canonicalName}"? This action will hide it from the main inventory list but will not remove historical data.`}
+              confirmText="Yes, Deactivate"
             />
           )}
         </div>

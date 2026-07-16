@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Loader2,
@@ -13,10 +13,14 @@ import {
   Pencil,
   Trash2,
   Tag,
+  Boxes,
+  MapPin,
+  ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import EditChemicalModal from '../../components/chemicals/EditChemicalModal';
 import DeleteConfirmationModal from '../../components/Common/DeleteConfirmationModal';
+import { useAuth } from '../../context/AuthContext';
 import { getSdsUrl } from '../../utils/sds';
 
 const DetailItem = ({ label, value, children }) => {
@@ -33,6 +37,56 @@ const DetailItem = ({ label, value, children }) => {
   );
 };
 
+const BatchList = ({ batches, baseUnit, isAuthenticated }) => {
+  if (!batches || batches.length === 0) {
+    return (
+      <div className="py-8 text-center text-sm text-[var(--color-text-muted)]">
+        No batches are currently in stock for this chemical.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {batches.map(batch => (
+        <div key={batch.id} className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-2 sm:mb-0">
+              <p className="text-sm font-bold text-[var(--color-text-primary)]">Batch: {batch.batchNumber}</p>
+              {isAuthenticated && (
+                <p className="text-xs text-[var(--color-text-secondary)]">Received: {batch.receivedDate}</p>
+              )}
+            </div>
+            {isAuthenticated && (
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-lg font-bold text-[var(--color-primary)]">{batch.currentQuantity}</p>
+                  <p className="text-xs font-semibold text-[var(--color-text-muted)]">{baseUnit}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{batch.expiryDate || 'No Expiry'}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">Expiry Date</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {batch.locationPath && batch.locationPath.length > 0 && (
+            <div className={`flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)] ${isAuthenticated ? 'mt-3 border-t border-[var(--color-border)] pt-3' : 'mt-2'}`}>
+              <MapPin size={14} className="shrink-0" />
+              {batch.locationPath.map((loc, index) => (
+                <React.Fragment key={loc.id}>
+                  <span>{loc.name}</span>
+                  {index < batch.locationPath.length - 1 && <ChevronRightIcon size={14} />}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const ChemicalDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -42,6 +96,7 @@ const ChemicalDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleteProcessing, setIsDeleteProcessing] = useState(false);
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const fetchChemical = async () => {
@@ -104,11 +159,11 @@ const ChemicalDetails = () => {
         <h3 className="text-xl font-semibold">Failed to Load Data</h3>
         <p className="max-w-md">{error}</p>
         <button
-          onClick={() => navigate('/chemicals/list')}
+          onClick={() => navigate(-1)}
           className="mt-4 inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-5 py-3 text-sm font-bold text-[var(--color-text-inverse)]"
         >
           <ArrowLeft size={18} />
-          Back to Inventory
+          Back
         </button>
       </div>
     );
@@ -132,11 +187,11 @@ const ChemicalDetails = () => {
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => navigate('/chemicals/list')}
+                    onClick={() => navigate(-1)}
                     className="mb-5 inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-primary-light)] bg-[var(--color-primary)] px-3 py-2 text-sm font-semibold text-[var(--color-text-inverse)] color-transition hover:bg-[var(--color-primary-light)]"
                   >
                     <ArrowLeft size={17} />
-                    Back to List
+                    Back
                   </button>
 
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -155,24 +210,26 @@ const ChemicalDetails = () => {
                         <strong className="font-bold text-[var(--color-accent-light)]">{chemical.chemicalCode}</strong>
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsConfirmingDelete(true)}
-                        className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--color-danger)] color-transition hover:bg-[var(--color-danger)] hover:text-[var(--color-text-inverse)]"
-                      >
-                        <Trash2 size={16} />
-                        Delete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditing(true)}
-                        className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-5 py-2.5 text-sm font-bold text-[var(--color-primary-dark)] shadow-[var(--shadow-sm)] color-transition hover:bg-[var(--color-accent-light)]"
-                      >
-                        <Pencil size={16} />
-                        Edit Chemical
-                      </button>
-                    </div>
+                    {isAuthenticated && (user.role === 'ADMIN' || user.role === 'TECHNICAL_OFFICER') && (
+                      <div className="flex shrink-0 items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsConfirmingDelete(true)}
+                          className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--color-danger)] color-transition hover:bg-[var(--color-danger)] hover:text-[var(--color-text-inverse)]"
+                        >
+                          <Trash2 size={16} />
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditing(true)}
+                          className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-5 py-2.5 text-sm font-bold text-[var(--color-primary-dark)] shadow-[var(--shadow-sm)] color-transition hover:bg-[var(--color-accent-light)]"
+                        >
+                          <Pencil size={16} />
+                          Edit Chemical
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -216,6 +273,16 @@ const ChemicalDetails = () => {
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-text-secondary)]">
                       {chemical.safetySummary || "No summary provided. Always refer to the official SDS."}
                     </p>
+                  </div>
+                </section>
+
+                <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)]">
+                  <header className="flex items-center gap-3 border-b border-[var(--color-border)] p-4 sm:p-5">
+                    <Boxes size={20} className="text-[var(--color-primary)]" />
+                    <h2 className="text-base font-bold text-[var(--color-text-primary)]">In-Stock Batches</h2>
+                  </header>
+                  <div className="p-4 sm:p-5">
+                    <BatchList batches={chemical.batches} baseUnit={chemical.baseUnit} isAuthenticated={isAuthenticated} />
                   </div>
                 </section>
               </div>

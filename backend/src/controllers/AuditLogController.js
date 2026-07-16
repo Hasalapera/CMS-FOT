@@ -1,4 +1,4 @@
-const { AuditLog, User } = require('../models');
+const { AuditLog, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 const getLogs = async (req, res) => {
@@ -25,8 +25,9 @@ const getLogs = async (req, res) => {
       where[Op.or] = [
         { userName: { [Op.iLike]: `%${search}%` } },
         { ipAddress: { [Op.iLike]: `%${search}%` } },
-        // Basic search on JSONB details. For advanced JSONB searching, raw queries might be better.
-        { details: { [Op.iLike]: `%${search}%` } },
+        // Cast JSONB to text for a simple, albeit slow, search.
+        // For high performance, a dedicated full-text search index (GIN) on this column is recommended.
+        sequelize.where(sequelize.cast(sequelize.col('details'), 'text'), { [Op.iLike]: `%${search}%` })
       ];
     }
 

@@ -35,6 +35,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/chemicals/:id" element={<ChemicalDetails />} />
         <Route path="/reset-password" element={<PasswordReset />} />
         <Route
           element={
@@ -46,7 +47,6 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chemicals/add-chemical" element={<AddChemical />} />
           <Route path="/chemicals/list" element={<ViewChemicals />} />
-          <Route path="/chemicals/:id" element={<ChemicalDetails />} />
           <Route
             path="/chemicals/deactivated"
             element={<ViewDeactivatedChemicals />}
