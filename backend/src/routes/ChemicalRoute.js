@@ -5,6 +5,9 @@ const uploadSds = require('../middlewares/uploadMiddleware.js');
 
 const router = express.Router();
 
+// Route to get dashboard stats
+router.get('/stats', verifyToken, ChemicalController.getChemicalStats);
+
 // Route to get all chemicals
 router.get('/', verifyToken, ChemicalController.getAllChemicals);
 

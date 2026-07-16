@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Truck, Plus, Loader2, ServerCrash, Search, Eye, Pencil, QrCode, X, Printer, Download, Save, AlertTriangle, Box, Calendar, MapPin, ChevronDown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Truck, Plus, Loader2, ServerCrash, Search, Pencil, QrCode, X, Printer, Download, Save, AlertTriangle, Box, Calendar, MapPin, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../../api/axiosInstance';
 import { useAuth } from '../../context/AuthContext';
@@ -8,22 +8,38 @@ import { QRCodeSVG } from 'qrcode.react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const getStatus = (expiryDate) => {
-  if (!expiryDate) {
-    return { text: 'No Expiry', color: 'bg-gray-100 text-gray-800' };
+const getStatus = (batch) => {
+  const { expiryDate, currentQuantity, lowStockThresholdQuantity } = batch;
+  const currentQty = Number(currentQuantity);
+  const thresholdQty = Number(lowStockThresholdQuantity);
+
+  if (currentQty <= 0) {
+    return { text: 'Out of Stock', color: 'bg-zinc-200 text-zinc-800' };
   }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expiryDate);
-  const thirtyDaysFromNow = new Date();
-  thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-  if (expiry < today) {
-    return { text: 'Expired', color: 'bg-red-100 text-red-800' };
+  if (expiryDate) {
+    const expiry = new Date(expiryDate);
+    if (expiry < today) {
+      return { text: 'Expired', color: 'bg-red-100 text-red-800' };
+    }
   }
-  if (expiry <= thirtyDaysFromNow) {
-    return { text: 'Expiring Soon', color: 'bg-yellow-100 text-yellow-800' };
+
+  if (Number.isFinite(thresholdQty) && thresholdQty >= 0 && currentQty <= thresholdQty) {
+    return { text: 'Low Stock', color: 'bg-orange-100 text-orange-800' };
   }
+
+  if (expiryDate) {
+    const expiry = new Date(expiryDate);
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
+    if (expiry <= thirtyDaysFromNow) {
+      return { text: 'Expiring Soon', color: 'bg-yellow-100 text-yellow-800' };
+    }
+  }
+
   return { text: 'Good', color: 'bg-green-100 text-green-800' };
 };
 
@@ -381,6 +397,7 @@ const ViewAllBatches = () => {
   const [qrModalBatch, setQrModalBatch] = useState(null);
   const [editingBatch, setEditingBatch] = useState(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchBatches = async () => {
@@ -470,9 +487,13 @@ const ViewAllBatches = () => {
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {filteredBatches.map(batch => {
-                const status = getStatus(batch.expiryDate);
+                const status = getStatus(batch);
                 return (
-                  <tr key={batch.id} className="hover:bg-[var(--color-surface-muted)]">
+                  <tr
+                    key={batch.id}
+                    className="cursor-pointer hover:bg-[var(--color-surface-muted)]"
+                    onClick={() => navigate(`/stock/batches/${batch.id}`)}
+                  >
                     <td className="whitespace-nowrap px-4 py-4 font-medium text-[var(--color-text-primary)]">
                       <div className="font-bold">{batch.chemical?.canonicalName || 'N/A'}</div>
                       <div className="text-xs text-[var(--color-text-muted)]">{batch.chemical?.chemicalCode}</div>
@@ -493,22 +514,18 @@ const ViewAllBatches = () => {
                       <div className="flex items-center justify-end gap-2">
                         {canViewQrCode && (
                           <button
-                            onClick={() => setQrModalBatch(batch)}
+                            onClick={(e) => { e.stopPropagation(); setQrModalBatch(batch); }}
                             className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-secondary)] hover:bg-white hover:text-[var(--color-text-primary)]"
                             title="Show QR Code"
                           ><QrCode size={16} /></button>
                         )}
-                        <Link
-                          to={`/stock/batches/${batch.id}`}
-                          className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-secondary)] hover:bg-white hover:text-[var(--color-text-primary)]"
-                          title="View Details"
-                        >
-                          <Eye size={16} />
-                        </Link>
                         {canEditBatch && (
                           <button
                             type="button"
-                            onClick={() => setEditingBatch(batch)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingBatch(batch);
+                            }}
                             className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-secondary)] hover:bg-white hover:text-[var(--color-text-primary)]"
                             title="Edit Batch"
                           >

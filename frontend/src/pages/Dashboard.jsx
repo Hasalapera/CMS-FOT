@@ -14,12 +14,15 @@ import {
   Filter,
   FlaskConical,
   MapPin,
+  Loader2,
   RefreshCcw,
   ShieldAlert,
   TrendingUp,
   Warehouse,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import api from "../api/axiosInstance";
 
 const DAY = 24 * 60 * 60 * 1000;
 const PANEL =
@@ -265,6 +268,12 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState(inputDate(monthStart));
   const [endDate, setEndDate] = useState(inputDate(today));
 
+  const { data: chemicalStats, isLoading: isLoadingChemicalStats } = useQuery({
+    queryKey: ['chemicalStats'],
+    queryFn: () => api.get('/chemicals/stats').then(res => res.data.stats),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
   const displayName = user?.fullName || user?.name || user?.institutionalId || "FLCMS User";
 
   const applyPreset = (value) => {
@@ -472,7 +481,16 @@ const Dashboard = () => {
           </section>
 
           <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            <MetricCard label="Total Chemicals" value="128" helper="+12 added this year" icon={FlaskConical} iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]" />
+            <Link to="/chemicals/list">
+              <MetricCard
+                label="Total Chemicals"
+                value={isLoadingChemicalStats ? <Loader2 className="h-7 w-7 animate-spin" /> : number(chemicalStats?.active)}
+                helper={isLoadingChemicalStats ? "Loading..." : `${number(chemicalStats?.inactive)} deactivated`}
+                icon={FlaskConical}
+                iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]"
+                helperClass="text-[var(--color-text-secondary)]"
+              />
+            </Link>
             <MetricCard label="Low Stock" value={lowStock} helper="Reorder recommended" icon={AlertTriangle} iconClass="bg-[var(--color-surface-muted)] text-[var(--color-warning)]" helperClass="text-[var(--color-warning)]" />
             <MetricCard label="Expiring Soon" value={expiring} helper="Within next 30 days" icon={CalendarDays} iconClass="bg-[var(--color-surface-muted)] text-[var(--color-danger)]" helperClass="text-[var(--color-danger)]" />
             <MetricCard label="Locations" value="24" helper="Across 6 laboratory areas" icon={MapPin} iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]" />

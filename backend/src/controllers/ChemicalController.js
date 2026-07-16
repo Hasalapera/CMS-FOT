@@ -770,6 +770,25 @@ const getChemicalDataByCas = async (req, res) => {
   }
 };
 
+const getChemicalStats = async (req, res) => {
+  try {
+    const activeCount = await Chemical.count({ where: { isActive: true } });
+    const inactiveCount = await Chemical.count({ where: { isActive: false } });
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        active: activeCount,
+        inactive: inactiveCount,
+        total: activeCount + inactiveCount,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching chemical stats:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching chemical stats.' });
+  }
+};
+
 module.exports = {
   addChemical,
   getNextChemicalCode,
@@ -782,4 +801,5 @@ module.exports = {
   getChemicalDataByCas,
   getChemicalsWithSds,
   getPublicChemicals,
+  getChemicalStats,
 };
