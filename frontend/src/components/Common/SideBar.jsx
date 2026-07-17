@@ -135,7 +135,7 @@ const MAIN_MENU_ITEMS = [
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
     children: [
       {
-        label: "Add New Stock",
+        label: "Add New Batch",
         path: "/stock/add",
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
@@ -506,7 +506,7 @@ const Sidebar = () => {
     select: (res) => res.data.count,
     enabled:
       !!user && (user.role === "ADMIN" || user.role === "TECHNICAL_OFFICER"),
-    refetchInterval: 60000, // Refetch every 60 seconds
+    refetchInterval: 15000,
   });
 
   const [mobileOpen, setMobileOpen] = useState(false);

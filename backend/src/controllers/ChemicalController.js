@@ -3,6 +3,26 @@ const { Op } = require('sequelize');
 const { logAction } = require("../services/auditLogService.js");
 const { createNotification } = require("../services/notificationService.js");
 const axios = require('axios');
+const crypto = require('crypto');
+const fs = require('fs/promises');
+
+const calculateFileChecksum = async (filePath) => {
+  const fileBuffer = await fs.readFile(filePath);
+  return crypto.createHash('sha256').update(fileBuffer).digest('hex');
+};
+
+const normalizeOptionalDate = (value) => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim();
+  return normalizedValue ? normalizedValue : null;
+};
 
 const getNextChemicalCode = async (req, res) => {
   try {
@@ -38,6 +58,8 @@ const addChemical = async (req, res) => {
       }
     }
 
+    payload.sdsRevisionDate = normalizeOptionalDate(payload.sdsRevisionDate);
+
     // Basic validation for required fields based on the model
     if (!payload.chemicalCode || !payload.canonicalName || !payload.stockDimension || !payload.baseUnit) {
       return res.status(400).json({ 
@@ -70,6 +92,7 @@ const addChemical = async (req, res) => {
       payload.sdsOriginalFilename = req.file.originalname;
       payload.sdsMimeType = req.file.mimetype;
       payload.sdsFileSize = req.file.size;
+      payload.sdsChecksum = await calculateFileChecksum(req.file.path);
       payload.sdsUploadedAt = new Date();
       payload.sdsUploadedById = req.user.id; // From verifyToken middleware
     }
@@ -169,6 +192,7 @@ const getPublicChemicals = async (req, res) => {
         "canonicalName",
         "formula",
         "physicalState",
+        "hazardCategory",
         "stockDimension",
         "baseUnit",
         "sdsStorageKey",
@@ -242,16 +266,17 @@ const updateChemical = async (req, res) => {
   try {
     const chemical = await Chemical.findByPk(id);
 
+    if (!chemical) {
+      return res.status(404).json({ success: false, message: 'Chemical not found.' });
+    }
+
     // Store the state *before* the update for the audit log
     const beforeUpdate = {
       canonicalName: chemical.canonicalName,
       casNumber: chemical.casNumber,
+      hazardCategory: chemical.hazardCategory,
       isActive: chemical.isActive,
     };
-
-    if (!chemical) {
-      return res.status(404).json({ success: false, message: 'Chemical not found.' });
-    }
 
     const payload = { ...req.body };
 
@@ -262,6 +287,10 @@ const updateChemical = async (req, res) => {
         console.warn("Could not parse synonyms on update, keeping original.", payload.synonyms);
         payload.synonyms = chemical.synonyms;
       }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payload, 'sdsRevisionDate')) {
+      payload.sdsRevisionDate = normalizeOptionalDate(payload.sdsRevisionDate);
     }
 
     if (payload.canonicalName && payload.canonicalName.trim().toLowerCase() !== chemical.canonicalName.toLowerCase()) {
@@ -285,6 +314,7 @@ const updateChemical = async (req, res) => {
       payload.sdsOriginalFilename = req.file.originalname;
       payload.sdsMimeType = req.file.mimetype;
       payload.sdsFileSize = req.file.size;
+      payload.sdsChecksum = await calculateFileChecksum(req.file.path);
       payload.sdsUploadedAt = new Date();
       payload.sdsUploadedById = req.user.id;
     }
@@ -409,6 +439,9 @@ const getChemicalsWithSds = async (req, res) => {
         'sdsStorageKey',
         'sdsOriginalFilename',
         'sdsMimeType',
+        'sdsFileSize',
+        'sdsChecksum',
+        'sdsRevisionDate',
         'sdsUploadedAt',
       ],
     });
@@ -737,6 +770,32 @@ const getChemicalDataByCas = async (req, res) => {
   }
 };
 
+const getChemicalStats = async (req, res) => {
+  try {
+    const activeCount = await Chemical.count({ where: { isActive: true } });
+    const inactiveCount = await Chemical.count({ where: { isActive: false } });
+    const sdsCount = await Chemical.count({
+      where: {
+        isActive: true,
+        sdsStorageKey: { [Op.ne]: null },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        active: activeCount,
+        inactive: inactiveCount,
+        total: activeCount + inactiveCount,
+        sdsCount: sdsCount,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching chemical stats:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching chemical stats.' });
+  }
+};
+
 module.exports = {
   addChemical,
   getNextChemicalCode,
@@ -749,4 +808,5 @@ module.exports = {
   getChemicalDataByCas,
   getChemicalsWithSds,
   getPublicChemicals,
+  getChemicalStats,
 };

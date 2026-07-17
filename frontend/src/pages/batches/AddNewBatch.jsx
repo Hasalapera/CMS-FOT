@@ -13,10 +13,12 @@ import {
   Info,
   Loader2,
   MapPin,
+  Printer,
   RotateCcw,
   Save,
   Truck,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import api from "../../api/axiosInstance";
 
 const INITIAL_FORM = {
@@ -24,9 +26,20 @@ const INITIAL_FORM = {
   supplier: "",
   batchNumber: "",
   quantityReceived: "",
+  lowStockThresholdQuantity: "",
   expiryDate: "",
   receivedDate: new Date().toISOString().split("T")[0], // Default to today
   locationId: "",
+};
+
+const getDefaultLowStockThreshold = (chemical) => {
+  if (!chemical) return "";
+
+  if (chemical.stockDimension === "VOLUME") return "300";
+  if (chemical.stockDimension === "MASS") return "500";
+  if (chemical.stockDimension === "COUNT") return "20";
+
+  return "";
 };
 
 const SuccessModal = ({ batch, onAddNew, onViewList }) => {
@@ -180,6 +193,14 @@ const AddNewBatch = () => {
     [formData.chemicalId, chemicals]
   );
 
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      lowStockThresholdQuantity: getDefaultLowStockThreshold(selectedChemical),
+    }));
+    setErrors((prev) => ({ ...prev, lowStockThresholdQuantity: "" }));
+  }, [selectedChemical]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -197,6 +218,16 @@ const AddNewBatch = () => {
       nextErrors.quantityReceived = "Quantity must be greater than zero.";
     }
     if (!formData.receivedDate) nextErrors.receivedDate = "Received date is required.";
+    if (formData.lowStockThresholdQuantity === "") {
+      nextErrors.lowStockThresholdQuantity = "Low stock threshold is required.";
+    } else if (Number(formData.lowStockThresholdQuantity) < 0) {
+      nextErrors.lowStockThresholdQuantity = "Threshold must be zero or greater.";
+    } else if (
+      formData.quantityReceived &&
+      Number(formData.lowStockThresholdQuantity) > Number(formData.quantityReceived)
+    ) {
+      nextErrors.lowStockThresholdQuantity = "Threshold cannot be greater than the received quantity.";
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -217,6 +248,7 @@ const AddNewBatch = () => {
         ...formData,
         quantityReceived: Number(formData.quantityReceived),
         currentQuantity: Number(formData.quantityReceived), // Initially, current quantity is the received quantity
+        lowStockThresholdQuantity: Number(formData.lowStockThresholdQuantity),
         expiryDate: formData.expiryDate || null,
         locationId: formData.locationId || null,
       };
@@ -398,6 +430,36 @@ const AddNewBatch = () => {
                       )}
                     </div>
                     <ErrorMessage message={errors.quantityReceived} />
+                  </div>
+
+                  {/* Low Stock Threshold */}
+                  <div>
+                    <InputLabel htmlFor="lowStockThresholdQuantity" required description="Alert users when this batch drops below this quantity. The default is based on the selected chemical type.">
+                      Low Stock Alert Threshold
+                    </InputLabel>
+                    <div className="relative">
+                      <AlertTriangle size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
+                      <input
+                        id="lowStockThresholdQuantity"
+                        name="lowStockThresholdQuantity"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.lowStockThresholdQuantity}
+                        onChange={handleChange}
+                        placeholder={selectedChemical?.stockDimension === "COUNT" ? "e.g. 20" : selectedChemical?.stockDimension === "MASS" ? "e.g. 500" : "e.g. 300"}
+                        disabled={!formData.chemicalId}
+                        className={`w-full rounded-[var(--radius-md)] border bg-[var(--color-surface)] py-3 pl-12 pr-20 text-sm font-medium text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] color-transition disabled:cursor-not-allowed disabled:bg-[var(--color-surface-muted)] ${
+                          errors.lowStockThresholdQuantity ? "border-[var(--color-danger)]" : "border-[var(--color-border)] focus:border-[var(--color-primary)]"
+                        }`}
+                      />
+                      {selectedChemical && (
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--color-text-secondary)]">
+                          {selectedChemical.baseUnit}
+                        </span>
+                      )}
+                    </div>
+                    <ErrorMessage message={errors.lowStockThresholdQuantity} />
                   </div>
 
                   {/* Location */}

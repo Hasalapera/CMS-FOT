@@ -33,10 +33,12 @@ const INITIAL_FORM = {
   casNumber: "",
   formula: "",
   physicalState: "LIQUID",
+  hazardCategory: "NONE",
   synonyms: [""],
   densityValue: "",
   densityUnit: "g/cm³",
   safetySummary: "",
+  sdsRevisionDate: "",
 };
 
 const STOCK_DIMENSION_OPTIONS = [
@@ -65,6 +67,20 @@ const PHYSICAL_STATE_OPTIONS = [
   { value: "LIQUID", label: "Liquid" },
   { value: "GAS", label: "Gas" },
   { value: "OTHER", label: "Other" },
+];
+
+const HAZARD_CATEGORY_OPTIONS = [
+  { value: "NONE", label: "None / Not classified" },
+  { value: "FLAMMABLE", label: "Flammable" },
+  { value: "CORROSIVE", label: "Corrosive" },
+  { value: "TOXIC", label: "Toxic" },
+  { value: "OXIDIZER", label: "Oxidizer" },
+  { value: "EXPLOSIVE", label: "Explosive" },
+  { value: "IRRITANT", label: "Irritant" },
+  { value: "ENVIRONMENTAL", label: "Environmental hazard" },
+  { value: "COMPRESSED_GAS", label: "Compressed gas" },
+  { value: "HEALTH_HAZARD", label: "Health hazard" },
+  { value: "OTHER", label: "Other hazard" },
 ];
 
 const BASE_UNIT_OPTIONS = {
@@ -458,6 +474,7 @@ const AddChemical = () => {
     casNumber: formData.casNumber.trim() ? formData.casNumber.trim() : null,
     formula: formData.formula.trim() ? formData.formula.trim() : null,
     physicalState: formData.physicalState,
+    hazardCategory: formData.hazardCategory,
 
     synonyms: formData.synonyms
       .map((s) => s.trim())
@@ -470,6 +487,7 @@ const AddChemical = () => {
       formData.densityValue === "" ? null : formData.densityUnit.trim(),
 
     safetySummary: formData.safetySummary.trim() ? formData.safetySummary.trim() : null,
+    sdsRevisionDate: formData.sdsRevisionDate || null,
   });
 
   const handleSubmit = async (event) => {
@@ -1222,6 +1240,51 @@ const AddChemical = () => {
                     description="Add a short warning for quick reference. This does not replace the official SDS."
                   />
 
+                  <div className="mb-6">
+                    <InputLabel
+                      htmlFor="hazardCategory"
+                      description="Select the primary hazard category for storage and safety visibility."
+                    >
+                      Hazard category
+                    </InputLabel>
+
+                    <div className="relative">
+                      <select
+                        id="hazardCategory"
+                        name="hazardCategory"
+                        value={formData.hazardCategory}
+                        onChange={handleChange}
+                        className="
+                          w-full appearance-none
+                          rounded-[var(--radius-md)]
+                          border border-[var(--color-border)]
+                          bg-[var(--color-surface)]
+                          px-4 py-3 pr-10
+                          text-sm font-medium
+                          text-[var(--color-text-primary)]
+                          color-transition
+                          focus:border-[var(--color-primary)]
+                        "
+                      >
+                        {HAZARD_CATEGORY_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <ChevronDown
+                        size={18}
+                        className="
+                          pointer-events-none
+                          absolute right-3 top-1/2
+                          -translate-y-1/2
+                          text-[var(--color-text-muted)]
+                        "
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <InputLabel
                       htmlFor="safetySummary"
@@ -1265,6 +1328,34 @@ const AddChemical = () => {
                   </div>
 
                   <div className="mt-6">
+                    <div className="mb-5">
+                      <InputLabel
+                        htmlFor="sdsRevisionDate"
+                        description="Use the revision or issue date printed on the SDS document."
+                      >
+                        SDS revision date
+                      </InputLabel>
+
+                      <input
+                        id="sdsRevisionDate"
+                        name="sdsRevisionDate"
+                        type="date"
+                        value={formData.sdsRevisionDate}
+                        onChange={handleChange}
+                        className="
+                          w-full
+                          rounded-[var(--radius-md)]
+                          border border-[var(--color-border)]
+                          bg-[var(--color-surface)]
+                          px-4 py-3
+                          text-sm font-medium
+                          text-[var(--color-text-primary)]
+                          color-transition
+                          focus:border-[var(--color-primary)]
+                        "
+                      />
+                    </div>
+
                     <InputLabel
                       htmlFor="sdsFile"
                       description="Upload the Safety Data Sheet (PDF or Word, max 10MB)."

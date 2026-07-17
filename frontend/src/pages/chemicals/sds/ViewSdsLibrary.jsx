@@ -1,10 +1,34 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format, parseISO } from 'date-fns';
+import { differenceInYears, format, parseISO } from 'date-fns';
 import { FileText, Search, Loader2, ServerCrash, Download, Eye, ArrowLeft } from 'lucide-react';
 import api from '../../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
-import { getSdsUrl } from '../../../utils/sds';
+import { getSdsFilename, getSdsUrl } from '../../../utils/sds';
+
+const formatDisplayDate = (value) => {
+  if (!value) {
+    return 'N/A';
+  }
+
+  try {
+    return format(parseISO(value), 'MMM dd, yyyy');
+  } catch {
+    return 'N/A';
+  }
+};
+
+const isSdsOutdated = (revisionDate) => {
+  if (!revisionDate) {
+    return false;
+  }
+
+  try {
+    return differenceInYears(new Date(), parseISO(revisionDate)) >= 3;
+  } catch {
+    return false;
+  }
+};
 
 const PageHeader = () => {
   const navigate = useNavigate();
@@ -61,7 +85,9 @@ const ViewSdsLibrary = () => {
       (chemical) =>
         chemical.canonicalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         chemical.chemicalCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (chemical.formula && chemical.formula.toLowerCase().includes(searchTerm.toLowerCase()))
+        (chemical.formula && chemical.formula.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (chemical.sdsOriginalFilename && chemical.sdsOriginalFilename.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (chemical.sdsChecksum && chemical.sdsChecksum.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [chemicals, searchTerm]);
 
@@ -108,23 +134,48 @@ const ViewSdsLibrary = () => {
               <tr>
                 <th scope="col" className="px-4 py-3.5 text-left font-semibold text-[var(--color-text-primary)]">Chemical</th>
                 <th scope="col" className="px-4 py-3.5 text-left font-semibold text-[var(--color-text-primary)]">Formula</th>
+                <th scope="col" className="px-4 py-3.5 text-left font-semibold text-[var(--color-text-primary)]">Revision</th>
                 <th scope="col" className="px-4 py-3.5 text-left font-semibold text-[var(--color-text-primary)]">Uploaded On</th>
+                <th scope="col" className="px-4 py-3.5 text-left font-semibold text-[var(--color-text-primary)]">Checksum</th>
                 <th scope="col" className="relative px-4 py-3.5"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {filteredChemicals.map((chemical) => {
                 const sdsUrl = getSdsUrl(chemical.sdsStorageKey);
+                const sdsFilename = chemical.sdsOriginalFilename || getSdsFilename(chemical.sdsStorageKey);
+                const needsReview = isSdsOutdated(chemical.sdsRevisionDate);
 
                 return (
                   <tr key={chemical.id} className="hover:bg-[var(--color-surface-muted)]">
                     <td className="whitespace-nowrap px-4 py-4 font-medium text-[var(--color-text-primary)]">
                       <div className="font-bold">{chemical.canonicalName}</div>
                       <div className="text-xs text-[var(--color-text-muted)]">{chemical.chemicalCode}</div>
+                      <div className="mt-1 max-w-56 truncate text-xs text-[var(--color-text-muted)]">
+                        {sdsFilename || 'SDS document'}
+                      </div>
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 text-[var(--color-text-secondary)]">{chemical.formula || 'N/A'}</td>
                     <td className="whitespace-nowrap px-4 py-4 text-[var(--color-text-secondary)]">
-                      {chemical.sdsUploadedAt ? format(parseISO(chemical.sdsUploadedAt), 'MMM dd, yyyy') : 'N/A'}
+                      <div className="font-semibold text-[var(--color-text-primary)]">
+                        {formatDisplayDate(chemical.sdsRevisionDate)}
+                      </div>
+                      {needsReview && (
+                        <span className="mt-1 inline-flex rounded-full bg-[var(--color-warning)]/15 px-2 py-0.5 text-xs font-bold text-[var(--color-warning)]">
+                          Review due
+                        </span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-4 text-[var(--color-text-secondary)]">
+                      {formatDisplayDate(chemical.sdsUploadedAt)}
+                      {chemical.sdsFileSize && (
+                        <div className="text-xs text-[var(--color-text-muted)]">
+                          {(chemical.sdsFileSize / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-4 font-mono text-xs text-[var(--color-text-secondary)]">
+                      {chemical.sdsChecksum ? `${chemical.sdsChecksum.slice(0, 16)}...` : 'N/A'}
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 text-right text-xs font-medium">
                       <div className="flex items-center justify-end gap-2">
@@ -140,7 +191,7 @@ const ViewSdsLibrary = () => {
                         </a>
                         <a
                           href={sdsUrl}
-                          download={chemical.sdsOriginalFilename}
+                          download={sdsFilename}
                           className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-[var(--color-text-inverse)] color-transition hover:bg-[var(--color-primary-light)]"
                           title="Download SDS"
                         >
