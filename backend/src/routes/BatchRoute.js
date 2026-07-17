@@ -21,6 +21,9 @@ router.get('/stats', verifyToken, BatchController.getBatchStats);
 // Route to get all batches
 router.get('/', verifyToken, BatchController.getAllBatches);
 
+// Route to get batch options for dashboard usage trend dropdowns
+router.get('/dashboard-options', verifyToken, BatchController.getAllBatches);
+
 // Route to add a new batch
 router.post('/', verifyToken, BatchController.addBatch);
 

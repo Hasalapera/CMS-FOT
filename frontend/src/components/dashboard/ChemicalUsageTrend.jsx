@@ -275,7 +275,7 @@ const ChemicalUsageTrend = ({
     queryKey: ["dashboardBatchesForTrend"],
 
     queryFn: async () => {
-      const response = await api.get("/batches");
+      const response = await api.get("/batches/dashboard-options");
 
       return response.data.batches || [];
     },
@@ -359,7 +359,7 @@ const ChemicalUsageTrend = ({
       }
 
       const response = await api.get(
-        "/reports/usage-trend",
+        "/usage/dashboard-trend",
         {
           params,
         },
@@ -383,6 +383,8 @@ const ChemicalUsageTrend = ({
     trendData?.trend || [];
 
   const trendUnit = trendData?.unit || "";
+
+  const hasTrendResponse = Boolean(trendData);
 
   /**
    * Create the selected chemical or batch label.
@@ -539,18 +541,20 @@ const ChemicalUsageTrend = ({
   ]);
 
   /**
-   * Calculate full usage without chart bucket changes.
+   * Prefer the backend stock-consumed total, which matches
+   * the ChemicalWise page's Total used value.
    */
-  const totalUsageQuantity = useMemo(
-    () =>
-      trendPointsData.reduce(
-        (total, item) =>
-          total +
-          Number(item.totalQuantity || 0),
-        0,
-      ),
-    [trendPointsData],
-  );
+  const totalUsageQuantity = useMemo(() => {
+    if (trendData?.totalUsed !== undefined) {
+      return Number(trendData.totalUsed || 0);
+    }
+
+    return trendPointsData.reduce(
+      (total, item) =>
+        total + Number(item.totalQuantity || 0),
+      0,
+    );
+  }, [trendData?.totalUsed, trendPointsData]);
 
   const selectionIsLoading =
     trendType === "chemical"
@@ -704,12 +708,7 @@ const ChemicalUsageTrend = ({
             {trendError?.response?.data?.message ||
               "Unable to load the usage trend."}
           </EmptyState>
-        ) : trendPoints.length === 0 ? (
-          <EmptyState>
-            No usage was recorded for the selected{" "}
-            {trendType} during this date range.
-          </EmptyState>
-        ) : (
+        ) : hasTrendResponse ? (
           <>
             <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
@@ -727,7 +726,7 @@ const ChemicalUsageTrend = ({
 
               <div className="text-left sm:text-right">
                 <p className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-                  Total Usage
+                  Total Used
                 </p>
 
                 <p className="mt-1 text-2xl font-extrabold text-[var(--color-primary)]">
@@ -739,12 +738,19 @@ const ChemicalUsageTrend = ({
               </div>
             </div>
 
-            <TrendChart
-              points={trendPoints}
-              unit={trendUnit}
-            />
+            {trendPoints.length === 0 ? (
+              <EmptyState>
+                No usage was recorded for the selected{" "}
+                {trendType} during this date range.
+              </EmptyState>
+            ) : (
+              <TrendChart
+                points={trendPoints}
+                unit={trendUnit}
+              />
+            )}
           </>
-        )}
+        ) : null}
       </div>
     </article>
   );

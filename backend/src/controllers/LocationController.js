@@ -83,6 +83,30 @@ const getAllLocations = async (req, res) => {
   }
 };
 
+const getLocationStats = async (req, res) => {
+  try {
+    const [total, rootLocations] = await Promise.all([
+      Location.count(),
+      Location.count({ where: { parentLocationId: null } }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        total,
+        rootLocations,
+        childLocations: total - rootLocations,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching location stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while fetching location stats.',
+    });
+  }
+};
+
 const getDescendants = async (locationId) => {
   const location = await Location.findByPk(locationId, {
     include: [
@@ -177,6 +201,7 @@ const getPublicLocationTree = async (req, res) => {
 
 module.exports = {
   getAllLocations,
+  getLocationStats,
   addLocation,
   getLocationById,
   getPublicLocationTree,

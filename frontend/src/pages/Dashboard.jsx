@@ -24,6 +24,7 @@ import { useAuth } from "../context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import api from "../api/axiosInstance";
 import ChemicalUsageTrend from "../components/dashboard/ChemicalUsageTrend.jsx";
+import UsageByHazardCategory from "../components/dashboard/UsageByHazardCategory.jsx";
 
 const DAY = 24 * 60 * 60 * 1000;
 const PANEL =
@@ -94,7 +95,7 @@ const MetricCard = ({ label, value, helper, icon: Icon, iconClass, helperClass =
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">{label}</p>
-        <p className="mt-3 truncate text-2xl font-extrabold text-[var(--color-text-primary)] sm:text-3xl">{value}</p>
+        <p className="mt-3 whitespace-nowrap text-2xl font-extrabold text-[var(--color-text-primary)] sm:text-3xl">{value}</p>
       </div>
       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${iconClass}`}>
         <Icon size={23} />
@@ -244,6 +245,12 @@ const Dashboard = () => {
     queryKey: ['batchStats'],
     queryFn: () => api.get('/batches/stats').then(res => res.data.stats),
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const { data: locationStats, isLoading: isLoadingLocationStats } = useQuery({
+    queryKey: ['locationStats'],
+    queryFn: () => api.get('/locations/stats').then(res => res.data.stats),
+    staleTime: 1000 * 60 * 5,
   });
 
   const displayName = user?.fullName || user?.name || user?.institutionalId || "FLCMS User";
@@ -416,7 +423,14 @@ const Dashboard = () => {
                 </div>
               </article>
             </Link>
-            <MetricCard label="Locations" value="24" helper="Across 6 laboratory areas" icon={MapPin} iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]" />
+            <MetricCard
+              label="Total Locations"
+              value={isLoadingLocationStats ? <Loader2 className="h-7 w-7 animate-spin" /> : number(locationStats?.total)}
+              helper={isLoadingLocationStats ? "Loading..." : `${number(locationStats?.rootLocations)} parent, ${number(locationStats?.childLocations)} child locations`}
+              icon={MapPin}
+              iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]"
+              helperClass="text-[var(--color-text-secondary)]"
+            />
             <MetricCard
               label="Total Usage"
               value={isLoadingBatchStats ? <Loader2 className="h-7 w-7 animate-spin" /> : `${(batchStats?.usagePercentage || 0).toFixed(1)}%`}
@@ -446,20 +460,11 @@ const Dashboard = () => {
               endDate={endDate}
               invalidRange={invalidRange}
             />
-
-            <article className={`${PANEL} overflow-hidden`}>
-              <SectionHeader
-                icon={ShieldAlert}
-                title="Usage by Hazard Category"
-                text="Dynamic distribution for the selected dates."
-              />
-
-              <div className="p-4 sm:p-5">
-                <EmptyState>
-                  Usage by category is coming soon.
-                </EmptyState>
-              </div>
-            </article>
+            <UsageByHazardCategory
+              startDate={startDate}
+              endDate={endDate}
+              invalidRange={invalidRange}
+            />
           </section>
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">

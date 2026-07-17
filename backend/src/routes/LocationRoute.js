@@ -8,6 +8,7 @@ const verifyToken = require('../middlewares/Authmiddleware.js');
 router.get('/public-tree', LocationController.getPublicLocationTree);
 
 // --- Protected Routes (require authentication) ---
+router.get('/stats', verifyToken, LocationController.getLocationStats);
 router.get('/', verifyToken, LocationController.getAllLocations);
 router.post('/add', verifyToken, LocationController.addLocation);
 router.get('/:id', verifyToken, LocationController.getLocationById);
