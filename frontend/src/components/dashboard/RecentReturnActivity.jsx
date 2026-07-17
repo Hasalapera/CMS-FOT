@@ -61,7 +61,11 @@ const EmptyState = ({ children }) => (
   </div>
 );
 
-const RecentReturnActivity = () => {
+const RecentReturnActivity = ({
+  startDate,
+  endDate,
+  invalidRange = false,
+}) => {
   const {
     data,
     isLoading,
@@ -69,11 +73,14 @@ const RecentReturnActivity = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["dashboardRecentReturns"],
+    queryKey: ["dashboardRecentReturns", startDate, endDate],
     queryFn: async () => {
-      const response = await api.get("/usage/recent-returns");
+      const response = await api.get("/usage/recent-returns", {
+        params: { startDate, endDate },
+      });
       return response.data;
     },
+    enabled: Boolean(startDate) && Boolean(endDate) && !invalidRange,
     staleTime: 1000 * 60 * 2,
     retry: 1,
   });
@@ -91,7 +98,11 @@ const RecentReturnActivity = () => {
       />
 
       <div className="p-4 sm:p-5">
-        {isLoading || isFetching ? (
+        {invalidRange ? (
+          <EmptyState>
+            Start date cannot be later than end date.
+          </EmptyState>
+        ) : isLoading || isFetching ? (
           <div className="flex min-h-56 items-center justify-center">
             <Loader2 className="animate-spin text-[var(--color-primary)]" />
           </div>

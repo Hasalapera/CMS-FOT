@@ -529,6 +529,41 @@ const getStockRiskSummary = async (req, res) => {
 
 const getRecentReturnActivity = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+    const whereClause = {
+      returnedStatus: "RETURNED",
+      dateReturned: { [Op.not]: null },
+    };
+
+    if (startDate || endDate) {
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          message: "Both startDate and endDate query parameters are required.",
+        });
+      }
+
+      const start = new Date(`${startDate}T00:00:00`);
+      const end = new Date(`${endDate}T00:00:00`);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return res.status(400).json({
+          message: "Invalid startDate or endDate query parameter.",
+        });
+      }
+
+      if (start > end) {
+        return res.status(400).json({
+          message: "startDate cannot be later than endDate.",
+        });
+      }
+
+      end.setHours(23, 59, 59, 999);
+      whereClause.dateReturned = {
+        [Op.not]: null,
+        [Op.between]: [start, end],
+      };
+    }
+
     const returns = await Dispose.findAll({
       attributes: [
         "id",
@@ -540,10 +575,7 @@ const getRecentReturnActivity = async (req, res) => {
         "userName",
         "stuRegisterNum",
       ],
-      where: {
-        returnedStatus: "RETURNED",
-        dateReturned: { [Op.not]: null },
-      },
+      where: whereClause,
       include: [
         {
           model: Chemical,
