@@ -448,6 +448,257 @@ const getInventorySnapshot = async (req, res) => {
   }
 };
 
+const getStockRiskSummary = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const batches = await Batch.findAll({
+      attributes: [
+        "id",
+        "currentQuantity",
+        "lowStockThresholdQuantity",
+        "expiryDate",
+      ],
+      include: [
+        {
+          model: Chemical,
+          as: "chemical",
+          attributes: ["id"],
+          where: { isActive: true },
+          required: true,
+        },
+      ],
+    });
+
+    const stats = batches.reduce(
+      (summary, batch) => {
+        const currentQuantity = Number(batch.currentQuantity || 0);
+        const lowStockThresholdQuantity = Number(batch.lowStockThresholdQuantity || 0);
+        let daysRemaining = null;
+
+        if (batch.expiryDate) {
+          const expiry = new Date(`${batch.expiryDate}T00:00:00`);
+          if (!Number.isNaN(expiry.getTime())) {
+            daysRemaining = Math.floor(
+              (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+            );
+          }
+        }
+
+        summary.total += 1;
+
+        if (currentQuantity <= 0) {
+          summary.outOfStock += 1;
+        } else if (daysRemaining !== null && daysRemaining < 0) {
+          summary.expired += 1;
+        } else if (
+          lowStockThresholdQuantity > 0 &&
+          currentQuantity <= lowStockThresholdQuantity
+        ) {
+          summary.lowStock += 1;
+        } else if (daysRemaining !== null && daysRemaining <= 30) {
+          summary.expiringSoon += 1;
+        } else {
+          summary.healthy += 1;
+        }
+
+        return summary;
+      },
+      {
+        total: 0,
+        expired: 0,
+        expiringSoon: 0,
+        lowStock: 0,
+        outOfStock: 0,
+        healthy: 0,
+      },
+    );
+
+    return res.json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    console.error("Error fetching stock risk summary:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching stock risk summary.",
+    });
+  }
+};
+
+const getRecentReturnActivity = async (req, res) => {
+  try {
+    const returns = await Dispose.findAll({
+      attributes: [
+        "id",
+        "chemicalCode",
+        "chemicalName",
+        "batchNumber",
+        "quantityUsed",
+        "dateReturned",
+        "userName",
+        "stuRegisterNum",
+      ],
+      where: {
+        returnedStatus: "RETURNED",
+        dateReturned: { [Op.not]: null },
+      },
+      include: [
+        {
+          model: Chemical,
+          as: "chemical",
+          attributes: ["baseUnit"],
+          required: false,
+        },
+      ],
+      order: [["dateReturned", "DESC"]],
+      limit: 6,
+    });
+
+    return res.json({
+      success: true,
+      activities: returns.map((item) => ({
+        id: item.id,
+        chemicalCode: item.chemicalCode,
+        chemicalName: item.chemicalName,
+        batchNumber: item.batchNumber,
+        quantityUsed: Number(item.quantityUsed || 0),
+        unit: item.chemical?.baseUnit || "",
+        dateReturned: item.dateReturned,
+        userName: item.userName,
+        stuRegisterNum: item.stuRegisterNum,
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching recent return activity:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching recent return activity.",
+    });
+  }
+};
+
+const getUnassignedStock = async (req, res) => {
+  try {
+    const whereClause = {
+      locationId: null,
+      currentQuantity: { [Op.gt]: 0 },
+    };
+
+    const include = [
+      {
+        model: Chemical,
+        as: "chemical",
+        attributes: ["canonicalName", "chemicalCode", "baseUnit"],
+        where: { isActive: true },
+        required: true,
+      },
+    ];
+
+    const [total, batches] = await Promise.all([
+      Batch.count({ where: whereClause, include }),
+      Batch.findAll({
+        attributes: ["id", "batchNumber", "currentQuantity", "expiryDate"],
+        where: whereClause,
+        include,
+        order: [
+          ["createdAt", "DESC"],
+          ["batchNumber", "ASC"],
+        ],
+        limit: 6,
+      }),
+    ]);
+
+    return res.json({
+      success: true,
+      total,
+      batches: batches.map((batch) => ({
+        id: batch.id,
+        chemicalName: batch.chemical?.canonicalName || "Unknown Chemical",
+        chemicalCode: batch.chemical?.chemicalCode || "",
+        batchNumber: batch.batchNumber,
+        currentQuantity: Number(batch.currentQuantity || 0),
+        unit: batch.chemical?.baseUnit || "",
+        expiryDate: batch.expiryDate,
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching unassigned stock:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching unassigned stock.",
+    });
+  }
+};
+
+const getExpiryWatchlist = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const batches = await Batch.findAll({
+      attributes: ["id", "batchNumber", "currentQuantity", "expiryDate"],
+      where: {
+        currentQuantity: { [Op.gt]: 0 },
+        expiryDate: { [Op.not]: null },
+      },
+      include: [
+        {
+          model: Chemical,
+          as: "chemical",
+          attributes: ["canonicalName", "chemicalCode", "baseUnit"],
+          where: { isActive: true },
+          required: true,
+        },
+        {
+          model: Location,
+          as: "location",
+          attributes: ["name", "type"],
+          required: false,
+        },
+      ],
+      order: [["expiryDate", "ASC"]],
+      limit: 8,
+    });
+
+    return res.json({
+      success: true,
+      watchlist: batches.map((batch) => {
+        const expiry = new Date(`${batch.expiryDate}T00:00:00`);
+        const daysRemaining = Number.isNaN(expiry.getTime())
+          ? null
+          : Math.floor(
+              (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+            );
+
+        return {
+          id: batch.id,
+          chemicalName: batch.chemical?.canonicalName || "Unknown Chemical",
+          chemicalCode: batch.chemical?.chemicalCode || "",
+          batchNumber: batch.batchNumber,
+          currentQuantity: Number(batch.currentQuantity || 0),
+          unit: batch.chemical?.baseUnit || "",
+          location: batch.location
+            ? `${batch.location.name}${batch.location.type ? ` (${batch.location.type})` : ""}`
+            : "Unassigned",
+          expiryDate: batch.expiryDate,
+          daysRemaining,
+          status:
+            daysRemaining !== null && daysRemaining < 0
+              ? "EXPIRED"
+              : daysRemaining !== null && daysRemaining <= 30
+                ? "EXPIRING_SOON"
+                : "UPCOMING",
+        };
+      }),
+    });
+  } catch (error) {
+    console.error("Error fetching expiry watchlist:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching expiry watchlist.",
+    });
+  }
+};
+
 module.exports = {
   retriveBatchDetails,
   calculateUsageBatchvise,
@@ -455,4 +706,8 @@ module.exports = {
   getDashboardUsageTrend,
   getUsageByHazardCategory,
   getInventorySnapshot,
+  getStockRiskSummary,
+  getRecentReturnActivity,
+  getUnassignedStock,
+  getExpiryWatchlist,
 };

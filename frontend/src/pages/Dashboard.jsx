@@ -26,7 +26,11 @@ import api from "../api/axiosInstance";
 import ChemicalUsageTrend from "../components/dashboard/ChemicalUsageTrend.jsx";
 import UsageByHazardCategory from "../components/dashboard/UsageByHazardCategory.jsx";
 import InventorySnapshot from "../components/dashboard/InventorySnapshot.jsx";
-import StorageOverview from "../components/dashboard/StorageOverview.jsx";
+import StockRiskSummary from "../components/dashboard/StockRiskSummary.jsx";
+import RecentReturnActivity from "../components/dashboard/RecentReturnActivity.jsx";
+import UnassignedStock from "../components/dashboard/UnassignedStock.jsx";
+import ExpiryWatchlist from "../components/dashboard/ExpiryWatchlist.jsx";
+import DashboardMetricCards from "../components/dashboard/DashboardMetricCards.jsx";
 
 const DAY = 24 * 60 * 60 * 1000;
 const PANEL =
@@ -237,24 +241,6 @@ const Dashboard = () => {
 
   const invalidRange = dateFromInput(startDate) > dateFromInput(endDate);
 
-  const { data: chemicalStats, isLoading: isLoadingChemicalStats } = useQuery({
-    queryKey: ['chemicalStats'],
-    queryFn: () => api.get('/chemicals/stats').then(res => res.data.stats),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  const { data: batchStats, isLoading: isLoadingBatchStats } = useQuery({
-    queryKey: ['batchStats'],
-    queryFn: () => api.get('/batches/stats').then(res => res.data.stats),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  const { data: locationStats, isLoading: isLoadingLocationStats } = useQuery({
-    queryKey: ['locationStats'],
-    queryFn: () => api.get('/locations/stats').then(res => res.data.stats),
-    staleTime: 1000 * 60 * 5,
-  });
-
   const displayName = user?.fullName || user?.name || user?.institutionalId || "FLCMS User";
 
   const applyPreset = (value) => {
@@ -278,183 +264,74 @@ const Dashboard = () => {
           <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-primary-dark)] px-5 py-6 shadow-[var(--shadow-md)] sm:px-7 sm:py-7 lg:px-8">
             <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full border border-[var(--color-accent)] opacity-20" />
             <div className="pointer-events-none absolute -bottom-28 right-20 h-56 w-56 rounded-full bg-[var(--color-primary-light)] opacity-30" />
-
-            <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-              <div className="max-w-3xl">
+            <div className="relative">
+              {/* Top badge and refresh button */}
+              <div className="flex w-full items-center gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)] bg-[var(--color-primary)] px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--color-accent-light)]">
                   <BarChart3 size={14} />
                   Laboratory Overview
                 </span>
-                <h1 className="mt-4 text-2xl font-extrabold text-[var(--color-text-inverse)] sm:text-3xl lg:text-4xl">
-                  Welcome back, {displayName}
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-inverse)] opacity-80 sm:text-base">
-                  Monitor chemical inventory, usage activity, stock risks and laboratory safety information from one dashboard.
-                </p>
-              </div>
-
-              <div className="grid w-full gap-3 sm:grid-cols-2 xl:max-w-xl">
-                <div className="rounded-[var(--radius-md)] border border-[var(--color-primary-light)] bg-[var(--color-primary)] p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-accent-light)]">Active Date Range</p>
-                  <p className="mt-2 text-sm font-extrabold text-[var(--color-text-inverse)]">
-                    {showDate(startDate)} – {showDate(endDate)}
-                  </p>
-                </div>
-                <Link
-                  to="/reports/usage"
-                  className="group flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-accent)] bg-[var(--color-accent)] p-4 text-[var(--color-primary-dark)] transition-transform duration-200 hover:-translate-y-0.5"
-                >
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.12em]">Reports</p>
-                    <p className="mt-2 text-sm font-extrabold">Open full analytics</p>
-                  </div>
-                  <FileChartColumn size={26} className="transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          <section className={`${PANEL} mt-6 p-4 sm:p-5`}>
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Filter size={18} className="text-[var(--color-primary)]" />
-                  <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">Report Date Filter</h2>
-                </div>
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                  Usage cards, line chart and pie chart update automatically.
-                </p>
-              </div>
-
-              <div className="grid w-full gap-3 sm:grid-cols-2 xl:w-auto xl:grid-cols-[180px_170px_170px_auto]">
-                <label>
-                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Quick Range</span>
-                  <select
-                    value={preset}
-                    onChange={(event) => applyPreset(event.target.value)}
-                    className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
-                  >
-                    <option value="this-month">This Month</option>
-                    <option value="last-30">Last 30 Days</option>
-                    <option value="last-90">Last 90 Days</option>
-                    <option value="this-year">This Year</option>
-                    {preset === "custom" && <option value="custom">Custom Range</option>}
-                  </select>
-                </label>
-
-                <label>
-                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Start Date</span>
-                  <input
-                    type="date"
-                    value={startDate}
-                    max={endDate || undefined}
-                    onChange={(event) => {
-                      setPreset("custom");
-                      setStartDate(event.target.value);
-                    }}
-                    className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
-                  />
-                </label>
-
-                <label>
-                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">End Date</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate || undefined}
-                    max={inputDate(today)}
-                    onChange={(event) => {
-                      setPreset("custom");
-                      setEndDate(event.target.value);
-                    }}
-                    className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
-                  />
-                </label>
 
                 <button
                   type="button"
-                  onClick={() => applyPreset("this-month")}
-                  className="mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] bg-[var(--color-surface-muted)] px-4 text-sm font-bold text-[var(--color-text-primary)] hover:border-[var(--color-accent)]"
+                  onClick={() => window.location.reload()}
+                  className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent-light)] transition-colors hover:bg-[var(--color-primary-light)]"
                 >
-                  <RefreshCcw size={16} />
-                  Reset
+                  <RefreshCcw size={13} />
+                  Refresh
                 </button>
               </div>
-            </div>
 
-            {invalidRange && (
-              <p className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-danger)] bg-[var(--color-surface-muted)] px-3 py-2 text-sm font-semibold text-[var(--color-danger)]">
-                Start date cannot be later than end date.
-              </p>
-            )}
-          </section>
+              {/* Main header content */}
+              <div className="mt-5 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                <div className="max-w-3xl">
+                  <h1 className="text-2xl font-extrabold text-[var(--color-text-inverse)] sm:text-3xl lg:text-4xl">
+                    Welcome back, {displayName}
+                  </h1>
 
-          <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            <Link to="/chemicals/list">
-              <MetricCard
-                label="Total Chemicals"
-                value={isLoadingChemicalStats ? <Loader2 className="h-7 w-7 animate-spin" /> : number(chemicalStats?.active)}
-                helper={isLoadingChemicalStats ? "Loading..." : `${number(chemicalStats?.inactive)} deactivated`}
-                icon={FlaskConical}
-                iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]"
-                helperClass="text-[var(--color-text-secondary)]"
-              />
-            </Link>
-            <Link to="/stock/batches">
-              <article className={`${PANEL} flex h-full flex-col p-0 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]`}>
-                <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Inventory Alerts</p>
-                    <p className="mt-3 truncate text-2xl font-extrabold text-[var(--color-text-primary)] sm:text-3xl">
-                      {isLoadingBatchStats ? <Loader2 className="inline-block h-7 w-7 animate-spin" /> : number((batchStats?.lowStock || 0) + (batchStats?.expiringSoon || 0))}
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-inverse)] opacity-80 sm:text-base">
+                    Monitor chemical inventory, usage activity, stock risks and
+                    laboratory safety information from one dashboard.
+                  </p>
+                </div>
+
+                <div className="grid w-full gap-3 sm:grid-cols-2 xl:max-w-xl">
+                  <div className="rounded-[var(--radius-md)] border border-[var(--color-primary-light)] bg-[var(--color-primary)] p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-accent-light)]">
+                      Active Date Range
+                    </p>
+
+                    <p className="mt-2 text-sm font-extrabold text-[var(--color-text-inverse)]">
+                      {showDate(startDate)} – {showDate(endDate)}
                     </p>
                   </div>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-muted)] text-[var(--color-warning)]">
-                    <AlertTriangle size={23} />
-                  </span>
+
+                  <Link
+                    to="/reports/usage"
+                    className="group flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-accent)] bg-[var(--color-accent)] p-4 text-[var(--color-primary-dark)] transition-transform duration-200 hover:-translate-y-0.5"
+                  >
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.12em]">
+                        Reports
+                      </p>
+
+                      <p className="mt-2 text-sm font-extrabold">
+                        Open full analytics
+                      </p>
+                    </div>
+
+                    <FileChartColumn
+                      size={26}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
+                  </Link>
                 </div>
-                <div className="mt-auto grid grid-cols-2 border-t border-[var(--color-border)]">
-                  <div className="border-r border-[var(--color-border)] p-2 text-center">
-                    <p className="text-lg font-bold text-[var(--color-warning)]">{isLoadingBatchStats ? '...' : number(batchStats?.lowStock)}</p>
-                    <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">Low Stock</p>
-                  </div>
-                  <div className="p-2 text-center">
-                    <p className="text-lg font-bold text-[var(--color-danger)]">{isLoadingBatchStats ? '...' : number(batchStats?.expiringSoon)}</p>
-                    <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">Expiring Soon</p>
-                  </div>
-                </div>
-              </article>
-            </Link>
-            <MetricCard
-              label="Total Locations"
-              value={isLoadingLocationStats ? <Loader2 className="h-7 w-7 animate-spin" /> : number(locationStats?.total)}
-              helper={isLoadingLocationStats ? "Loading..." : `${number(locationStats?.rootLocations)} parent, ${number(locationStats?.childLocations)} child locations`}
-              icon={MapPin}
-              iconClass="bg-[var(--color-primary-tint)] text-[var(--color-primary)]"
-              helperClass="text-[var(--color-text-secondary)]"
-            />
-            <MetricCard
-              label="Total Usage"
-              value={isLoadingBatchStats ? <Loader2 className="h-7 w-7 animate-spin" /> : `${(batchStats?.usagePercentage || 0).toFixed(1)}%`}
-              helper={isLoadingBatchStats ? "Loading..." : `${number(batchStats?.totalUsed)} of ${number(batchStats?.totalReceived)} units consumed`}
-              icon={TrendingUp}
-              iconClass="bg-[var(--color-primary-tint)] text-[var(--color-success)]"
-              helperClass="text-[var(--color-success)]"
-            />
-            <Link to="/sds/library">
-              <MetricCard
-                label="SDS Documents"
-                value={isLoadingChemicalStats ? <Loader2 className="h-7 w-7 animate-spin" /> : number(chemicalStats?.sdsCount)}
-                helper={
-                  isLoadingChemicalStats ? "Loading..." :
-                  `${chemicalStats?.active > 0 ? ((chemicalStats?.sdsCount / chemicalStats?.active) * 100).toFixed(1) : '0.0'}% document coverage`
-                }
-                icon={FileText}
-                iconClass="bg-[var(--color-surface-muted)] text-[var(--color-accent-dark)]"
-                helperClass="text-[var(--color-accent-dark)]"
-              />
-            </Link>
+              </div>
+            </div>
           </section>
+
+          <DashboardMetricCards />
+
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">
             <ChemicalUsageTrend
@@ -471,89 +348,13 @@ const Dashboard = () => {
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">
             <InventorySnapshot />
-
-            <StorageOverview />
+            <StockRiskSummary />
           </section>
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">
-            <article className={`${PANEL} overflow-hidden`}>
-              <SectionHeader icon={Clock3} title="Recent Usage Activity" text="Latest records inside the selected date range." to="/usage/batchwise" action="View all" />
-              <div className="p-4 sm:p-5">
-                {/* {filteredUsage.length ? (
-                  <div className="space-y-1">
-                    {filteredUsage.slice(0, 5).map((item) => (
-                      <div key={item.id} className="flex gap-3 rounded-[var(--radius-sm)] px-2 py-3 hover:bg-[var(--color-primary-tint)]">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-extrabold text-[var(--color-text-inverse)]">
-                          {item.user.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-                            <p className="text-sm font-extrabold text-[var(--color-text-primary)]">{item.chemical} — {number(item.quantity)} L</p>
-                            <span className="shrink-0 text-xs font-semibold text-[var(--color-text-muted)]">{showDate(item.date)}</span>
-                          </div>
-                          <p className="mt-1 truncate text-xs text-[var(--color-text-secondary)]">By {item.user} • {item.lab}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : ( */}
-                  <EmptyState>Recent usage is coming soon.</EmptyState>
-                {/* )} */}
-              </div>
-            </article>
-
-            <article className={`${PANEL} overflow-hidden`}>
-              <SectionHeader icon={BarChart3} title="Top Chemical Usage" text="Highest issued quantities for the selected period." to="/reports/usage" action="Detailed report" />
-              <div className="p-4 sm:p-5">
-                {/* {report.top.length ? (
-                  <div className="space-y-5">
-                    {report.top.map((item, index) => (
-                      <div key={item.chemical}>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-tint)] text-xs font-extrabold text-[var(--color-primary)]">{index + 1}</span>
-                            <span className="truncate text-sm font-bold text-[var(--color-text-primary)]">{item.chemical}</span>
-                          </div>
-                          <strong className="shrink-0 text-sm text-[var(--color-primary)]">{number(item.quantity)} L</strong>
-                        </div>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--color-surface-muted)]">
-                          <div className="h-full rounded-full bg-[var(--color-primary)]" style={{ width: `${(item.quantity / topMax) * 100}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : ( */}
-                  <EmptyState>Top usage is coming soon.</EmptyState>
-                {/* )} */}
-              </div>
-            </article>
-
-            <article className={`${PANEL} overflow-hidden`}>
-              <SectionHeader icon={Bell} title="Alerts & Notifications" text="Items that need laboratory attention." to="/notifications" action="View all" />
-              <div className="p-4 sm:p-5">
-                {/* <div className="space-y-2">
-                  {ALERTS.map(({ id, title, text, label, color, Icon }) => (
-                    <div key={id} className="flex gap-3 rounded-[var(--radius-sm)] border border-transparent p-2.5 hover:border-[var(--color-border)] hover:bg-[var(--color-surface-muted)]">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-surface-muted)]" style={{ color }}>
-                        <Icon size={18} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-                          <p className="text-sm font-extrabold text-[var(--color-text-primary)]">{title}</p>
-                          <span className="w-fit shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-extrabold" style={{ color, borderColor: color }}>{label}</span>
-                        </div>
-                        <p className="mt-1 text-xs leading-5 text-[var(--color-text-secondary)]">{text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div> */}
-                <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-primary-tint)] px-3 py-2.5 text-xs font-semibold text-[var(--color-primary)]">
-                  <CheckCircle2 size={16} />
-                  Safety monitoring is active for all configured locations.
-                </div>
-                <EmptyState>Live alerts are coming soon.</EmptyState>
-              </div>
-            </article>
+            <RecentReturnActivity />
+            <UnassignedStock />
+            <ExpiryWatchlist />
           </section>
         </div>
       </main>
