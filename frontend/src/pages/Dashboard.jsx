@@ -23,6 +23,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import api from "../api/axiosInstance";
+import ChemicalUsageTrend from "../components/dashboard/ChemicalUsageTrend.jsx";
 
 const DAY = 24 * 60 * 60 * 1000;
 const PANEL =
@@ -56,6 +57,12 @@ const showDate = (value) =>
         year: "numeric",
       }).format(dateFromInput(value))
     : "N/A";
+
+const trendDateKey = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  return inputDate(new Date(value));
+};
 
 const number = (value) =>
   new Intl.NumberFormat("en-US", {
@@ -239,21 +246,7 @@ const Dashboard = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const { data: trendData, isLoading: isLoadingTrend } = useQuery({
-    queryKey: ['usageTrend', startDate, endDate],
-    queryFn: () => api.get('/reports/usage-trend', { params: { startDate, endDate } }).then(res => res.data.trend),
-    enabled: !!startDate && !!endDate && !invalidRange,
-  });
-
   const displayName = user?.fullName || user?.name || user?.institutionalId || "FLCMS User";
-
-  // Helper function to format date as YYYY-MM-DD
-  const toInputDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const applyPreset = (value) => {
     const end = new Date();
@@ -268,39 +261,6 @@ const Dashboard = () => {
     setStartDate(inputDate(start));
     setEndDate(inputDate(end));
   };
-
-  const trendPoints = useMemo(() => {
-    if (!trendData || !startDate || !endDate || invalidRange) return [];
-
-    const start = dateFromInput(startDate);
-    const end = dateFromInput(endDate);
-    const dateMap = new Map(trendData.map(d => [toInputDate(new Date(d.date)), Number(d.usageCount)]));
-
-    const trend = [];
-    const totalDays = Math.max(1, Math.floor((end - start) / DAY) + 1);
-    const buckets = Math.min(8, totalDays);
-    const bucketSize = Math.max(1, Math.ceil(totalDays / buckets));
-
-    for (let i = 0; i < buckets; i++) {
-        const bucketStart = new Date(start.getTime() + i * bucketSize * DAY);
-        let bucketValue = 0;
-        for (let j = 0; j < bucketSize; j++) {
-            const day = new Date(bucketStart.getTime() + j * DAY);
-            if (day > end) break;
-            const dayString = toInputDate(day);
-            if (dateMap.has(dayString)) {
-                bucketValue += dateMap.get(dayString);
-            }
-        }
-        trend.push({
-            label: new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" }).format(bucketStart),
-            value: bucketValue,
-        });
-    }
-    return trend;
-  }, [trendData, startDate, endDate, invalidRange]);
-
-  const totalUsageCount = useMemo(() => trendData?.reduce((sum, item) => sum + Number(item.usageCount), 0) || 0, [trendData]);
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
@@ -481,31 +441,23 @@ const Dashboard = () => {
           </section>
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">
-            <article className={`${PANEL} overflow-hidden xl:col-span-2`}>
-              <SectionHeader icon={Activity} title="Chemical Usage Trend" text="Issued quantity for the selected reporting period." to="/reports/usage" action="View report" />
-              <div className="p-4 sm:p-5">
-                {isLoadingTrend ? (
-                  <div className="flex min-h-44 items-center justify-center"><Loader2 className="animate-spin" /></div>
-                ) : trendPoints.length === 0 ? (
-                  <EmptyState>No chemical usage was recorded in this date range.</EmptyState>
-                ) : (
-                  <>
-                    <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Total Usage</p>
-                        <p className="mt-1 text-2xl font-extrabold text-[var(--color-primary)]">{number(totalUsageCount)}</p>
-                      </div>
-                    </div>
-                    <TrendChart points={trendPoints} />
-                  </>
-                )}
-              </div>
-            </article>
+            <ChemicalUsageTrend
+              startDate={startDate}
+              endDate={endDate}
+              invalidRange={invalidRange}
+            />
 
             <article className={`${PANEL} overflow-hidden`}>
-              <SectionHeader icon={ShieldAlert} title="Usage by Hazard Category" text="Dynamic distribution for the selected dates." />
+              <SectionHeader
+                icon={ShieldAlert}
+                title="Usage by Hazard Category"
+                text="Dynamic distribution for the selected dates."
+              />
+
               <div className="p-4 sm:p-5">
-                <EmptyState>Usage by category is coming soon.</EmptyState>
+                <EmptyState>
+                  Usage by category is coming soon.
+                </EmptyState>
               </div>
             </article>
           </section>

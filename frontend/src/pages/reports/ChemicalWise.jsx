@@ -210,7 +210,7 @@ const ChemicalWise = () => {
     try {
       setIsDetailLoading(true);
       const response = await api.get(
-        `/reports/chemicals/${encodeURIComponent(chemicalCode)}`,
+        `/reports/chemical/${encodeURIComponent(chemicalCode)}`,
       );
       setDetail(response.data);
     } catch (error) {
@@ -229,7 +229,7 @@ const ChemicalWise = () => {
       setIsDownloading(true);
       setDownloadError("");
       const response = await api.get(
-        `/reports/chemicals/${encodeURIComponent(selectedCode)}/download`,
+        `/reports/chemical/${encodeURIComponent(selectedCode)}/download`,
         { responseType: "blob" },
       );
       const blobUrl = window.URL.createObjectURL(
