@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import api from "../../api/axiosInstance";
 import {
   LayoutDashboard,
   FlaskConical,
@@ -8,7 +10,7 @@ import {
   Warehouse,
   MapPin,
   FileText,
-  Bell,
+  Bell as BellIcon,
   ChartNoAxesCombined,
   Truck,
   Users,
@@ -19,7 +21,7 @@ import {
   ChevronRight,
   LogOut,
   ShieldCheck,
-  Recycle,
+  Pencil,
 } from "lucide-react";
 
 const ROLE_LABELS = {
@@ -34,18 +36,18 @@ const MAIN_MENU_ITEMS = [
     label: "Dashboard",
     path: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
   },
   {
     label: "Chemicals",
     icon: FlaskConical,
     pathPrefix: "/chemicals",
-    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
     children: [
       {
         label: "View All Chemicals",
         path: "/chemicals/list",
-        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
       },
       {
         label: "Add New Chemical",
@@ -60,7 +62,7 @@ const MAIN_MENU_ITEMS = [
     ],
   },
   {
-    label: "Usage",
+    label: "Usage Status",
     icon: Activity,
     pathPrefix: "/usage",
     roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
@@ -78,8 +80,8 @@ const MAIN_MENU_ITEMS = [
     ],
   },
   {
-    label: "Disposals",
-    icon: Recycle,
+    label: "Update Usage",
+    icon: Pencil,
     pathPrefix: "/disposals",
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
     children: [
@@ -89,7 +91,7 @@ const MAIN_MENU_ITEMS = [
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
       {
-        label: "Return and Disposal",
+        label: "Return Chemicals",
         path: "/disposal/return",
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
@@ -115,9 +117,16 @@ const MAIN_MENU_ITEMS = [
   },
   {
     label: "SDS Library",
-    path: "/sds-library",
+    pathPrefix: "/sds",
     icon: FileText,
-    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER", "STUDENT"],
+    roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
+    children: [
+      {
+        label: "View SDS",
+        path: "/sds/library",
+        roles: ["ADMIN", "TECHNICAL_OFFICER", "LECTURER"],
+      },
+    ],
   },
   {
     label: "Procurement & Stock",
@@ -126,7 +135,7 @@ const MAIN_MENU_ITEMS = [
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
     children: [
       {
-        label: "Add New Stock",
+        label: "Add New Batch",
         path: "/stock/add",
         roles: ["ADMIN", "TECHNICAL_OFFICER"],
       },
@@ -139,15 +148,27 @@ const MAIN_MENU_ITEMS = [
   },
   {
     label: "Alerts & Notifications",
-    path: "/alerts",
-    icon: Bell,
+    path: "/notifications",
+    icon: BellIcon,
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
   },
   {
     label: "Reports",
-    path: "/reports",
     icon: ChartNoAxesCombined,
+    pathPrefix: "/reports",
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
+    children: [
+      {
+        label: "Chemical Status Report",
+        path: "/reports/chemicalwise",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+      {
+        label: "Usage Report",
+        path: "/reports/usage",
+        roles: ["ADMIN", "TECHNICAL_OFFICER"],
+      },
+    ],
   },
 ];
 
@@ -171,14 +192,8 @@ const ADMIN_MENU_ITEMS = [
     ],
   },
   {
-    label: "Settings",
-    path: "/settings",
-    icon: Settings,
-    roles: ["ADMIN", "TECHNICAL_OFFICER"],
-  },
-  {
     label: "Audit Logs",
-    path: "/audit-logs",
+    path: "/admin/audit-logs",
     icon: ClipboardList,
     roles: ["ADMIN", "TECHNICAL_OFFICER"],
   },
@@ -196,8 +211,10 @@ const getInitials = (name = "") => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const SidebarLink = ({ item, closeMobileMenu }) => {
+const SidebarLink = ({ item, closeMobileMenu, notificationCount = 0 }) => {
   const Icon = item.icon;
+  const showNotificationBadge =
+    item.path === "/notifications" && notificationCount > 0;
 
   return (
     <NavLink
@@ -227,6 +244,12 @@ const SidebarLink = ({ item, closeMobileMenu }) => {
           </span>
 
           <span className="min-w-0 flex-1 truncate">{item.label}</span>
+
+          {showNotificationBadge && (
+            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] px-1.5 text-[10px] font-bold text-[var(--color-primary-dark)]">
+              {notificationCount > 99 ? "99+" : notificationCount}
+            </span>
+          )}
 
           {isActive && (
             <ChevronRight
@@ -328,6 +351,7 @@ const SidebarContent = ({
   adminItems,
   closeMobileMenu,
   handleLogout,
+  notificationCount,
 }) => {
   const navigate = useNavigate();
 
@@ -386,6 +410,7 @@ const SidebarContent = ({
                   key={item.path}
                   item={item}
                   closeMobileMenu={closeMobileMenu}
+                  notificationCount={notificationCount}
                 />
               ),
             )}
@@ -412,6 +437,7 @@ const SidebarContent = ({
                     key={item.path}
                     item={item}
                     closeMobileMenu={closeMobileMenu}
+                    notificationCount={notificationCount}
                   />
                 ),
               )}
@@ -474,6 +500,15 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  const { data: countData } = useQuery({
+    queryKey: ["notificationCount"],
+    queryFn: () => api.get("/notifications/count"),
+    select: (res) => res.data.count,
+    enabled:
+      !!user && (user.role === "ADMIN" || user.role === "TECHNICAL_OFFICER"),
+    refetchInterval: 15000,
+  });
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const role = user?.role || "STUDENT";
@@ -518,8 +553,8 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     closeMobileMenu();
+    navigate("/", { replace: true });
     logout();
-    navigate("/login", { replace: true });
   };
 
   return (
@@ -553,15 +588,14 @@ const Sidebar = () => {
 
         <button
           type="button"
-          onClick={() => navigate("/alerts")}
+          onClick={() => navigate("/notifications")}
           className="relative flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-primary)] color-transition hover:bg-[var(--color-primary-tint)]"
           aria-label="Open notifications"
         >
-          <Bell size={21} />
-
-          {(role === "ADMIN" || role === "TECHNICAL_OFFICER") && (
-            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[9px] font-bold text-[var(--color-primary-dark)]">
-              3
+          <BellIcon size={21} />
+          {countData > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[9px] font-bold text-[var(--color-primary-dark)] ring-1 ring-[var(--color-surface)]">
+              {countData > 9 ? "9+" : countData}
             </span>
           )}
         </button>
@@ -575,6 +609,7 @@ const Sidebar = () => {
           adminItems={adminItems}
           closeMobileMenu={closeMobileMenu}
           handleLogout={handleLogout}
+          notificationCount={countData || 0}
         />
       </aside>
 
@@ -623,6 +658,7 @@ const Sidebar = () => {
             adminItems={adminItems}
             closeMobileMenu={closeMobileMenu}
             handleLogout={handleLogout}
+            notificationCount={countData || 0}
           />
         </aside>
       </div>

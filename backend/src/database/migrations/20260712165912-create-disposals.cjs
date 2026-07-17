@@ -61,7 +61,7 @@ module.exports = {
         allowNull: false,
       },
 
-      user_id: {
+      stu_register_num: {
         type: Sequelize.STRING(50),
         allowNull: false,
       },
