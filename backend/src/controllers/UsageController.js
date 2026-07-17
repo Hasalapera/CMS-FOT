@@ -1,4 +1,4 @@
-const { Dispose, Chemical, Batch, sequelize } = require("../models/index.js");
+const { Dispose, Chemical, Batch, Location, sequelize } = require("../models/index.js");
 const { Op, QueryTypes } = require("sequelize");
 const { logAction } = require('../services/auditLogService.js');
 
@@ -361,10 +361,98 @@ const getUsageByHazardCategory = async (req, res) => {
   }
 };
 
+const getInventorySnapshot = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const batches = await Batch.findAll({
+      attributes: [
+        "id",
+        "batchNumber",
+        "currentQuantity",
+        "lowStockThresholdQuantity",
+        "expiryDate",
+      ],
+      include: [
+        {
+          model: Chemical,
+          as: "chemical",
+          attributes: ["canonicalName", "chemicalCode", "baseUnit"],
+          where: { isActive: true },
+          required: true,
+        },
+        {
+          model: Location,
+          as: "location",
+          attributes: ["name", "type"],
+          required: false,
+        },
+      ],
+      order: [
+        ["expiryDate", "ASC"],
+        ["currentQuantity", "ASC"],
+        ["createdAt", "DESC"],
+      ],
+      limit: 12,
+    });
+
+    const rows = batches.map((batch) => {
+      const currentQuantity = Number(batch.currentQuantity || 0);
+      const lowStockThresholdQuantity = Number(batch.lowStockThresholdQuantity || 0);
+      let daysRemaining = null;
+      let status = "HEALTHY";
+
+      if (batch.expiryDate) {
+        const expiry = new Date(`${batch.expiryDate}T00:00:00`);
+        if (!Number.isNaN(expiry.getTime())) {
+          daysRemaining = Math.floor(
+            (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+          );
+        }
+      }
+
+      if (daysRemaining !== null && daysRemaining < 0) {
+        status = "EXPIRED";
+      } else if (currentQuantity <= lowStockThresholdQuantity) {
+        status = "LOW_STOCK";
+      } else if (daysRemaining !== null && daysRemaining <= 30) {
+        status = "EXPIRING_SOON";
+      }
+
+      return {
+        id: batch.id,
+        chemicalName: batch.chemical?.canonicalName || "Unknown Chemical",
+        chemicalCode: batch.chemical?.chemicalCode || "",
+        batchNumber: batch.batchNumber,
+        currentQuantity,
+        unit: batch.chemical?.baseUnit || "",
+        location: batch.location
+          ? `${batch.location.name}${batch.location.type ? ` (${batch.location.type})` : ""}`
+          : "Unassigned",
+        expiryDate: batch.expiryDate,
+        daysRemaining,
+        status,
+      };
+    });
+
+    return res.json({
+      success: true,
+      inventory: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching inventory snapshot:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching inventory snapshot.",
+    });
+  }
+};
+
 module.exports = {
   retriveBatchDetails,
   calculateUsageBatchvise,
   calculateUsageChemicalvise,
   getDashboardUsageTrend,
   getUsageByHazardCategory,
+  getInventorySnapshot,
 };

@@ -25,6 +25,8 @@ import { useQuery } from "@tanstack/react-query";
 import api from "../api/axiosInstance";
 import ChemicalUsageTrend from "../components/dashboard/ChemicalUsageTrend.jsx";
 import UsageByHazardCategory from "../components/dashboard/UsageByHazardCategory.jsx";
+import InventorySnapshot from "../components/dashboard/InventorySnapshot.jsx";
+import StorageOverview from "../components/dashboard/StorageOverview.jsx";
 
 const DAY = 24 * 60 * 60 * 1000;
 const PANEL =
@@ -468,62 +470,9 @@ const Dashboard = () => {
           </section>
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">
-            <article className={`${PANEL} overflow-hidden xl:col-span-2`}>
-              <SectionHeader icon={FlaskConical} title="Inventory Snapshot" text="Important stock, expiry and storage information." to="/chemicals/list" action="View inventory" />
-              <div className="overflow-x-auto">
-                <table className="min-w-[900px] w-full border-collapse text-left">
-                  <thead className="bg-[var(--color-surface-muted)]">
-                    <tr className="text-xs font-extrabold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-                      <th className="px-5 py-3">Chemical</th>
-                      <th className="px-4 py-3">CAS No.</th>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3">Quantity</th>
-                      <th className="px-4 py-3">Expiry</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--color-border)]">
-                    {/* {INVENTORY.map((item) => (
-                      <tr key={item.id} className="hover:bg-[var(--color-primary-tint)]">
-                        <td className="px-5 py-3.5">
-                          <p className="font-bold text-[var(--color-text-primary)]">{item.name}</p>
-                          <p className="mt-1 max-w-56 truncate text-xs text-[var(--color-text-muted)]">{item.location}</p>
-                        </td>
-                        <td className="px-4 py-3.5 text-sm text-[var(--color-text-secondary)]">{item.cas}</td>
-                        <td className="px-4 py-3.5 text-sm text-[var(--color-text-secondary)]">{item.category}</td>
-                        <td className="px-4 py-3.5 text-sm font-bold text-[var(--color-text-primary)]">{item.quantity}</td>
-                        <td className="px-4 py-3.5 text-sm text-[var(--color-text-secondary)]">{showDate(item.expiry)}</td>
-                        <td className="px-4 py-3.5">
-                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass(item.status)}`}>{item.status}</span>
-                        </td>
-                      </tr>
-                    ))} */}
-                    <tr><td colSpan="6"><EmptyState>Inventory snapshot is coming soon.</EmptyState></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </article>
+            <InventorySnapshot />
 
-            <article className={`${PANEL} overflow-hidden`}>
-              <SectionHeader icon={Warehouse} title="Storage Overview" text="Current utilization across laboratory locations." to="/locations" action="View locations" />
-              <div className="space-y-5 p-4 sm:p-5">
-                {/* {LOCATIONS.map((item) => (
-                  <div key={item.name}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">{item.name}</p>
-                        <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">{item.count} locations</p>
-                      </div>
-                      <strong className="text-sm text-[var(--color-primary)]">{item.usage}%</strong>
-                    </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--color-surface-muted)]">
-                      <div className="h-full rounded-full bg-[var(--color-primary)]" style={{ width: `${item.usage}%` }} />
-                    </div>
-                  </div>
-                ))} */}
-                <EmptyState>Locations overview is coming soon.</EmptyState>
-              </div>
-            </article>
+            <StorageOverview />
           </section>
 
           <section className="mt-6 grid gap-6 xl:grid-cols-3">
