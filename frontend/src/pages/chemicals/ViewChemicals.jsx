@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FlaskConical, Plus, Loader2, ServerCrash, Search, Trash2 } from 'lucide-react';
+import { FlaskConical, Plus, Loader2, ServerCrash, Search } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import ChemicalCard from '../../components/Common/ChemicalCard';
 import EditChemicalModal from '../../components/chemicals/EditChemicalModal';
@@ -127,7 +127,7 @@ const ViewChemicals = () => {
                     </span>
                   </div>
                   <h1 className="text-2xl font-extrabold text-[var(--color-text-inverse)] sm:text-3xl lg:text-4xl">
-                    Master Chemical List
+                    Laboratory Chemical List
                   </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-inverse)] opacity-80 sm:text-base">
                     Browse, search, and manage all chemicals in the master database.
