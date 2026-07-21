@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../api/axiosInstance";
+import PasswordReset from "../PasswordReset";
 import {
   LayoutDashboard,
   FlaskConical,
@@ -352,12 +353,13 @@ const SidebarContent = ({
   closeMobileMenu,
   handleLogout,
   notificationCount,
+  openPasswordReset,
 }) => {
   const navigate = useNavigate();
 
-  const userName = user?.fullName || "FLCMS User";
+  const userName = user?.fullName || "FOTCMS User";
   const userRole = user?.role || "STUDENT";
-  const department = user?.department || "Chemistry Department";
+  const department = user?.department || "Department of Biosystem Technology";
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -372,12 +374,13 @@ const SidebarContent = ({
           className="flex w-full items-center gap-3 text-left"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-accent)] bg-[var(--color-primary-dark)] text-[var(--color-accent-light)] shadow-[var(--shadow-sm)]">
-            <FlaskConical size={26} strokeWidth={2} />
+            {/* <FlaskConical size={26} strokeWidth={2} /> */}
+            <a href=""
           </div>
 
           <div className="min-w-0">
             <h1 className="truncate text-xl font-extrabold tracking-wide text-[var(--color-text-inverse)]">
-              FLCMS
+              FOTCMS
             </h1>
 
             <p className="mt-0.5 text-[10px] leading-4 text-[var(--color-text-inverse)]/65">
@@ -454,12 +457,9 @@ const SidebarContent = ({
               {getInitials(userName)}
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                navigate("/profile");
-                closeMobileMenu();
-              }}
+            <div
+              // type="button"
+              // onClick={openPasswordReset}
               className="min-w-0 flex-1 text-left"
             >
               <p className="truncate text-sm font-bold text-[var(--color-text-inverse)]">
@@ -473,12 +473,16 @@ const SidebarContent = ({
               <span className="mt-2 inline-flex rounded-full border border-[var(--color-accent)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent-light)]">
                 {ROLE_LABELS[userRole] || userRole}
               </span>
+            </div>
+            
+            <button
+              type="button"
+              onClick={openPasswordReset}
+              aria-label="Open password reset"
+              className="shrink-0 rounded-full p-1 text-[var(--color-accent-light)] transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-light)]"
+            >
+              <ChevronRight size={18} />
             </button>
-
-            <ChevronRight
-              size={18}
-              className="shrink-0 text-[var(--color-accent-light)]"
-            />
           </div>
 
           <button
@@ -509,6 +513,7 @@ const Sidebar = () => {
     refetchInterval: 15000,
   });
 
+  const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const role = user?.role || "STUDENT";
@@ -525,6 +530,15 @@ const Sidebar = () => {
 
   const closeMobileMenu = () => {
     setMobileOpen(false);
+  };
+
+  const openPasswordReset = () => {
+    closeMobileMenu();
+    setIsPasswordResetOpen(true);
+  };
+
+  const closePasswordReset = () => {
+    setIsPasswordResetOpen(false);
   };
 
   useEffect(() => {
@@ -610,6 +624,7 @@ const Sidebar = () => {
           closeMobileMenu={closeMobileMenu}
           handleLogout={handleLogout}
           notificationCount={countData || 0}
+          openPasswordReset={openPasswordReset}
         />
       </aside>
 
@@ -659,9 +674,11 @@ const Sidebar = () => {
             closeMobileMenu={closeMobileMenu}
             handleLogout={handleLogout}
             notificationCount={countData || 0}
+            openPasswordReset={openPasswordReset}
           />
         </aside>
       </div>
+      {isPasswordResetOpen && <PasswordReset onClose={closePasswordReset} />}
     </>
   );
 };
