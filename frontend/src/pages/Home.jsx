@@ -43,11 +43,11 @@ const AVAILABILITY_FILTERS = [
 const DEVELOPER_PROFILES = [
   {
     name: "Hasala Perera",
-    href: "https://github.com/search?q=Hasala%20Perera&type=users",
+    href: "https://github.com/Hasalapera",
   },
   {
     name: "Sadeepa Dinakara",
-    href: "https://github.com/search?q=Sadeepa%20Dinakara&type=users",
+    href: "https://github.com/Sadeepa-D",
   },
 ];
 
@@ -308,9 +308,9 @@ const Home = () => {
           {/* Faculty Logo */}
           <div className="flex items-center gap-3 min-w-0">
             <img
-              src="/logoFac.jpg"
+              src="/faculty_logo.png"
               alt="Faculty Logo"
-              className="h-12 w-12 shrink-0 bg-white object-cover shadow-sm sm:h-14 sm:w-14"
+              className="h-12 w-12 shrink-0 object-cover shadow-sm sm:h-14 sm:w-14"
             />
             <div className="min-w-0">
               <p className="font-[family-name:var(--font-display)] text-sm sm:text-base font-semibold text-[var(--color-text-inverse)] leading-tight truncate color-transition">

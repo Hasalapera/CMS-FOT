@@ -412,7 +412,7 @@ const DisplosaReq = () => {
                     <div className="mb-3 flex items-center gap-2">
                       <span className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-accent-light)]">
                         <Boxes size={14} />
-                        Disposals
+                        Release Records
                       </span>
                     </div>
 
